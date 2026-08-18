@@ -1,0 +1,12 @@
+use_default_settings: true
+
+server:
+  bind_address: "0.0.0.0"
+  limiter: false
+  secret_key: "replace-before-network-exposure"
+
+search:
+  safe_search: 1
+  formats:
+    - html
+    - json

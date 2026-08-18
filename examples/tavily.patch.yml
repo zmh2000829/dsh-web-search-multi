@@ -1,0 +1,7 @@
+- id: web-search-multi
+  config:
+    provider: tavily
+    tavily:
+      apiKeyEnv: TAVILY_API_KEY
+      searchDepth: basic
+      topic: general

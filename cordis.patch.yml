@@ -1,0 +1,14 @@
+- id: web
+  name: '@deepseek-ai/dsh-web'
+  config:
+    searchProvider: configurable-search
+
+- insert:
+    - id: web-search-multi
+      name: dsh-web-search-multi
+      config:
+        provider: searxng
+        searxng:
+          baseURL: http://127.0.0.1:8080
+          language: all
+          safeSearch: 1

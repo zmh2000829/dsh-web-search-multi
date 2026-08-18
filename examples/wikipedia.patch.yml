@@ -1,0 +1,5 @@
+- id: web-search-multi
+  config:
+    provider: wikipedia
+    wikipedia:
+      language: zh

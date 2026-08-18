@@ -1,0 +1,7 @@
+- id: web-search-multi
+  config:
+    provider: searxng
+    searxng:
+      baseURL: http://127.0.0.1:8080
+      language: all
+      safeSearch: 1

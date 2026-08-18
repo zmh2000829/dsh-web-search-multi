@@ -1,0 +1,6 @@
+- id: web
+  config:
+    searchProvider: deepseek-official
+
+- id: web-search-multi
+  disabled: true
