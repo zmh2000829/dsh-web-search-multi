@@ -17,7 +17,7 @@ dsh plugin --profile web add github:zmh2000829/dsh-web-search-multi
 
 If pnpm reports that the Git dependency's build script was blocked, follow its `allowBuilds` instruction and repeat the command. Do not enable unrelated package build scripts.
 
-The bundle selects `configurable-search` and starts with the local SearXNG endpoint `http://127.0.0.1:8080`. Start the included service from a checkout when that endpoint is not already available:
+The bundle selects `configurable-search` and configures the local SearXNG endpoint `http://127.0.0.1:8080`; it does not start SearXNG. Start the included service from a checkout when that endpoint is not already available:
 
 ```sh
 docker compose -f deploy/searxng/compose.yml up -d

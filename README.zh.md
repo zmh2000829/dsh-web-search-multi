@@ -39,17 +39,19 @@ dsh plugin --profile web add github:zmh2000829/dsh-web-search-multi
 
 通过 Git 源安装时，pnpm 第一次可能阻止包的 `prepare` 构建。按照 `dsh` 输出的 `allowBuilds` 提示完成授权，然后重新执行安装命令。
 
-该包是 DSH 组合包。安装会加入 `cordis.patch.yml`，选择稳定的 provider id `configurable-search`，并默认使用 `http://127.0.0.1:8080` 上的 SearXNG。
+该包是 DSH 组合包。安装会加入 `cordis.patch.yml`，选择稳定的 provider id `configurable-search`，并默认连接 `http://127.0.0.1:8080` 上的 SearXNG。**插件不会自动安装或启动 SearXNG。**
 
 ## 免费的本地 SearXNG
 
-仓库包含只绑定本机回环地址并开启 JSON 输出的 Compose 部署：
+仓库包含只绑定本机回环地址并开启 JSON 输出的 Compose 部署。进入本仓库目录后启动一次即可；容器配置为 `restart: unless-stopped`：
 
 ```sh
 docker compose -f deploy/searxng/compose.yml up -d
 curl -fsS -X POST http://127.0.0.1:8080/search \
   -d 'q=DeepSeek&format=json'
 ```
+
+如果只通过 GitHub 安装了插件而本机没有仓库目录，先执行 `git clone https://github.com/zmh2000829/dsh-web-search-multi.git`，再进入该目录运行上面的 Compose 命令。停止服务执行 `docker compose -f deploy/searxng/compose.yml down`。这项服务不会随 DSH 插件的启用、关闭或卸载而自动启停。
 
 不要直接把此配置暴露到公网；公网部署必须增加认证、限流、独立密钥和 SearXNG 部署文档要求的其他保护。
 
@@ -63,7 +65,7 @@ curl -fsS -X POST http://127.0.0.1:8080/search \
 
 ### Web 界面
 
-打开 **设置 → 插件 → 插件配置 → 多源网页搜索**。该卡片可以选择四种提供方、编辑各自参数，并直接保存 Brave 或 Tavily 密钥；密钥通过 DSH credentials 写入，不会进入 settings。卡片只读取“已配置/可写”状态。提供方或参数保存后，下一次搜索立即生效，无需重启 DSH。
+打开 **设置 → 插件 → 插件配置 → 多源网页搜索**。该卡片可以选择四种提供方、编辑各自参数，并直接保存 Brave 或 Tavily 密钥；密钥通过 DSH credentials 写入，不会进入 settings。卡片只读取“已配置/可写”状态。点击 **测试配置** 会用当前表单草稿执行一次真实的 `DeepSeek` 查询，不需要先保存；成功时显示耗时、结果数和首条标题，失败时显示提供方返回的错误。提供方或参数保存后，下一次搜索立即生效，无需重启 DSH。
 
 页面原有的 **网页搜索** 卡片属于内置 DeepSeek 提供方。本插件使用名称明确的 **多源网页搜索** 卡片，请不要混用。
 
@@ -166,7 +168,7 @@ dsh web
 - 外部 JSON 在进入 DSH 前会经过校验。
 - API key 只通过提供方规定的认证 header 发送，不会出现在 URL 或结果中。
 - API key 始终由 DSH 凭据存储管理，并在每次搜索时解析一次。
-- 浏览器配置接口只接受回环地址上的同源请求，拒绝跨站写入、限制请求体大小，而且永不返回密钥值。
+- 浏览器配置和测试接口只接受回环地址上的同源请求，拒绝跨站写入、限制请求体大小，而且永不返回密钥值。测试时填写的新密钥只用于本次提供方请求，不会写入凭据存储。
 - 插件只实现搜索，不会开启任意 URL 抓取。
 
 ## 与 AnySearch DSH 的区别

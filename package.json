@@ -1,6 +1,6 @@
 {
   "name": "dsh-web-search-multi",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Configurable SearXNG, Brave, Tavily, and Wikipedia search provider for DeepSeek Harness",
   "homepage": "https://github.com/zmh2000829/dsh-web-search-multi#readme",
   "bugs": {

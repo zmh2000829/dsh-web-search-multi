@@ -39,17 +39,19 @@ dsh plugin --profile web add github:zmh2000829/dsh-web-search-multi
 
 For a Git source install, pnpm may initially block the package's `prepare` build. Follow the `allowBuilds` instruction printed by `dsh`, then repeat the install command.
 
-The package is a DSH bundle. Installation adds its `cordis.patch.yml`, selects the stable provider id `configurable-search`, and defaults to SearXNG at `http://127.0.0.1:8080`.
+The package is a DSH bundle. Installation adds its `cordis.patch.yml`, selects the stable provider id `configurable-search`, and defaults to connecting to SearXNG at `http://127.0.0.1:8080`. **The plugin does not install or start SearXNG.**
 
 ## Free local SearXNG
 
-The included Compose deployment binds only to localhost and enables JSON output:
+The included Compose deployment binds only to localhost and enables JSON output. Start it once from this repository checkout; the container uses `restart: unless-stopped`:
 
 ```sh
 docker compose -f deploy/searxng/compose.yml up -d
 curl -fsS -X POST http://127.0.0.1:8080/search \
   -d 'q=DeepSeek&format=json'
 ```
+
+If the plugin was installed from GitHub and no checkout exists locally, clone `https://github.com/zmh2000829/dsh-web-search-multi.git`, enter that directory, and run the Compose command above. Stop it with `docker compose -f deploy/searxng/compose.yml down`. Enabling, disabling, or removing the DSH plugin does not start or stop this service.
 
 Do not expose this configuration publicly without adding authentication, rate limiting, a unique secret, and the other protections required by the SearXNG deployment guide.
 
@@ -63,7 +65,7 @@ The same configurations are available as ready-to-use files under `examples/`; u
 
 ### Web UI
 
-Open **Settings → Plugins → Plugin configuration → Multi-provider web search**. The card lets you select all four providers, edit provider-specific options, and save Brave or Tavily keys without putting a secret in settings. A saved key goes through DSH credentials and the card receives only its configured/writable status. Provider and option changes apply to the next search without restarting DSH.
+Open **Settings → Plugins → Plugin configuration → Multi-provider web search**. The card lets you select all four providers, edit provider-specific options, and save Brave or Tavily keys without putting a secret in settings. A saved key goes through DSH credentials and the card receives only its configured/writable status. **Test configuration** runs one real `DeepSeek` query against the current draft without saving first; success reports latency, result count, and the first title, while failure reports the provider error. Provider and option changes apply to the next search without restarting DSH.
 
 The stock **Web search** card belongs to the bundled DeepSeek provider. Use the separately named **Multi-provider web search** card for this plugin.
 
@@ -166,7 +168,7 @@ The tests mock every paid API request and verify authentication, credential rota
 - Returned JSON is validated before it reaches DSH.
 - API keys are sent only in provider-defined authorization headers and are not included in URLs or results.
 - API keys remain in DSH-managed credential storage and are resolved once per search.
-- The browser settings endpoint accepts only loopback same-origin requests, rejects cross-site writes, caps request bodies, and never returns key values.
+- The browser settings and test endpoint accepts only loopback same-origin requests, rejects cross-site writes, caps request bodies, and never returns key values. A newly entered key is used only for that test request and is not written to credential storage.
 - The plugin implements search only; it does not enable arbitrary URL fetching.
 
 ## Compared with AnySearch DSH

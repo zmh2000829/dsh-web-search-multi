@@ -20,10 +20,19 @@ export interface BrowserSettingsSnapshot {
   }
 }
 
+/** Safe summary returned after exercising one provider with a real query. */
+export interface SettingsTestResult {
+  readonly provider: string
+  readonly resultCount: number
+  readonly durationMs: number
+  readonly firstTitle?: string | undefined
+}
+
 /** Server operations exposed through the same-origin settings route. */
 export interface SettingsApi {
   readonly read: () => Promise<BrowserSettingsSnapshot>
   readonly write: (config: unknown, apiKey: string | undefined) => Promise<BrowserSettingsSnapshot>
+  readonly test: (config: unknown, apiKey: string | undefined) => Promise<SettingsTestResult>
 }
 
 interface RequestHeaders {
@@ -57,8 +66,8 @@ export function settingsHandler(api: SettingsApi) {
       if (!isTrustedSettingsRequest(request, false)) return forbidden(response)
       return json(response, 200, await api.read())
     }
-    if (request.method !== 'PUT') {
-      response.writeHead(405, { allow: 'GET, PUT' })
+    if (request.method !== 'PUT' && request.method !== 'POST') {
+      response.writeHead(405, { allow: 'GET, POST, PUT' })
       response.end()
       return
     }
@@ -80,7 +89,10 @@ export function settingsHandler(api: SettingsApi) {
       return json(response, 400, { error: 'apiKey must be a string of at most 8192 characters' })
     }
     try {
-      return json(response, 200, await api.write(input.config, apiKey))
+      const value = request.method === 'POST'
+        ? await api.test(input.config, apiKey)
+        : await api.write(input.config, apiKey)
+      return json(response, 200, value)
     } catch (error: unknown) {
       return json(response, 400, { error: error instanceof Error ? error.message : String(error) })
     }

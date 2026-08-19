@@ -169,6 +169,32 @@ export function apply(ctx: Context, config: Config): void {
       path: SETTINGS_PATH,
       handler: settingsHandler({
         read: snapshot,
+        test: async (value, apiKey) => {
+          const candidate = value as Config
+          const selected = candidate.provider ?? 'searxng'
+          const key = apiKey?.trim()
+          if (key !== undefined && key.length > 0 && selected !== 'brave' && selected !== 'tavily') {
+            throw new TypeError('an API key can only be tested with Brave or Tavily')
+          }
+          const reference = selected === 'brave'
+            ? candidate.brave?.apiKeyEnv ?? BRAVE_API_KEY_ENV
+            : selected === 'tavily'
+              ? candidate.tavily?.apiKeyEnv ?? TAVILY_API_KEY_ENV
+              : undefined
+          const testCredentials: CredentialReader = async requested => (
+            key !== undefined && key.length > 0 && requested === reference ? key : credentials(requested)
+          )
+          const candidateBackend = createBackend(candidate, environment, testCredentials)
+          const startedAt = Date.now()
+          const result = await candidateBackend.search({ query: 'DeepSeek', maxResults: 1 })
+          const firstTitle = result.sources[0]?.title?.slice(0, 120)
+          return {
+            provider: candidateBackend.kind,
+            resultCount: result.sources.length,
+            durationMs: Date.now() - startedAt,
+            ...firstTitle === undefined ? {} : { firstTitle },
+          }
+        },
         write: async (value, apiKey) => {
           await webCtx.settings.update(WEB_SEARCH_MULTI_SETTINGS_NAMESPACE, value as Config)
           if (apiKey !== undefined && apiKey.trim().length > 0) {
