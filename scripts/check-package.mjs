@@ -21,6 +21,7 @@ for (const required of [
   'cordis.patch.yml',
   'lib/index.js',
   'lib/index.d.ts',
+  'lib/client.js',
   'lib/invariant.js',
   'lib/invariant.d.ts',
   'deploy/searxng/compose.yml',

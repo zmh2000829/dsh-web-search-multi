@@ -2,11 +2,14 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 import { credentialRef } from '@deepseek-ai/dsh-credentials'
+import type {} from '@deepseek-ai/dsh-host-webserver'
 import { launchEnvironmentOf } from '@deepseek-ai/dsh-launch-environment'
+import { installSettingsSection, settingsNamespace } from '@deepseek-ai/dsh-settings'
 import z from '@deepseek-ai/schemastery'
-import type {} from '@deepseek-ai/dsh-web'
+import type { WebSearchProvider } from '@deepseek-ai/dsh-web'
 import { BraveBackend } from './brave.ts'
 import { DEFAULT_REQUEST_TIMEOUT_MS } from './http.ts'
+import { SETTINGS_PATH, settingsHandler } from './settings-route.ts'
 import { SearxngBackend, endpointFor } from './searxng.ts'
 import { TavilyBackend } from './tavily.ts'
 import type { BraveConfig, CredentialReader, ProviderKind, SearchBackend, SearxngConfig, TavilyConfig, WikipediaConfig } from './types.ts'
@@ -26,6 +29,8 @@ export const BRAVE_API_KEY_ENV = 'BRAVE_SEARCH_API_KEY'
 export const TAVILY_API_KEY_ENV = 'TAVILY_API_KEY'
 /** Default SearXNG instance configured by the shipped bundle. */
 export const SEARXNG_BASE_URL_ENV = 'SEARXNG_BASE_URL'
+/** Settings namespace consumed by the browser card and Host provider. */
+export const WEB_SEARCH_MULTI_SETTINGS_NAMESPACE = settingsNamespace('web-search-multi')
 
 /** Cordis plugin name used in loader diagnostics. */
 export const name = 'web-search-multi'
@@ -125,12 +130,92 @@ export function createBackend(config: Config, environment: EnvironmentReader, cr
 
 /** Register the selected backend under the stable provider id. */
 export function apply(ctx: Context, config: Config): void {
-  const backend = createBackend(
-    config,
-    key => launchEnvironmentOf(ctx).get(key)?.value,
-    async reference => (await ctx.credentials.resolve(credentialRef(reference)))?.value,
-  )
-  ctx.effect(() => ctx.web.registerSearchProvider(backend))
+  const environment: EnvironmentReader = key => launchEnvironmentOf(ctx).get(key)?.value
+  const credentials: CredentialReader = async reference => (await ctx.credentials.resolve(credentialRef(reference)))?.value
+  let current: () => Config = () => config
+  let backend = createBackend(config, environment, credentials)
+  const provider: WebSearchProvider = {
+    id: PROVIDER_ID,
+    available: () => backend.available(),
+    search: (request, signal) => backend.search(request, signal),
+  }
+  ctx.effect(() => ctx.web.registerSearchProvider(provider))
+
+  installSettingsSection(ctx, WEB_SEARCH_MULTI_SETTINGS_NAMESPACE, Config, config, {
+    setSource: (source) => {
+      current = source
+    },
+    validate: (candidate) => {
+      createBackend(candidate, environment, credentials)
+    },
+    onChange: () => {
+      backend = createBackend(current(), environment, credentials)
+    },
+  })
+
+  ctx.inject(['webServer', 'settings'], (webCtx) => {
+    const snapshot = async () => {
+      const active = current()
+      return {
+        config: configForBrowser(active, environment),
+        credentials: {
+          brave: await credentialStatus(webCtx, active.brave?.apiKeyEnv ?? BRAVE_API_KEY_ENV),
+          tavily: await credentialStatus(webCtx, active.tavily?.apiKeyEnv ?? TAVILY_API_KEY_ENV),
+        },
+      }
+    }
+    webCtx.effect(() => webCtx.webServer.register({
+      kind: 'exact',
+      path: SETTINGS_PATH,
+      handler: settingsHandler({
+        read: snapshot,
+        write: async (value, apiKey) => {
+          await webCtx.settings.update(WEB_SEARCH_MULTI_SETTINGS_NAMESPACE, value as Config)
+          if (apiKey !== undefined && apiKey.trim().length > 0) {
+            const selected = current().provider ?? 'searxng'
+            if (selected !== 'brave' && selected !== 'tavily') {
+              throw new TypeError('an API key can only be stored for Brave or Tavily')
+            }
+            const reference = selected === 'brave'
+              ? current().brave?.apiKeyEnv ?? BRAVE_API_KEY_ENV
+              : current().tavily?.apiKeyEnv ?? TAVILY_API_KEY_ENV
+            await webCtx.credentials.set(credentialRef(reference), apiKey.trim())
+          }
+          return snapshot()
+        },
+      }),
+    }), 'web-search-multi: browser settings route')
+  })
+}
+
+function configForBrowser(config: Config, environment: EnvironmentReader): Config {
+  return {
+    provider: config.provider ?? 'searxng',
+    requestTimeoutMs: config.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS,
+    searxng: {
+      baseURL: config.searxng?.baseURL ?? environment(SEARXNG_BASE_URL_ENV) ?? '',
+      language: config.searxng?.language ?? 'all',
+      safeSearch: config.searxng?.safeSearch ?? 1,
+      ...config.searxng?.categories === undefined ? {} : { categories: config.searxng.categories },
+    },
+    brave: {
+      apiKeyEnv: config.brave?.apiKeyEnv ?? BRAVE_API_KEY_ENV,
+      safeSearch: config.brave?.safeSearch ?? 'moderate',
+      ...config.brave?.country === undefined ? {} : { country: config.brave.country },
+      ...config.brave?.searchLanguage === undefined ? {} : { searchLanguage: config.brave.searchLanguage },
+    },
+    tavily: {
+      apiKeyEnv: config.tavily?.apiKeyEnv ?? TAVILY_API_KEY_ENV,
+      searchDepth: config.tavily?.searchDepth ?? 'basic',
+      topic: config.tavily?.topic ?? 'general',
+    },
+    wikipedia: { language: config.wikipedia?.language ?? 'en' },
+  }
+}
+
+async function credentialStatus(ctx: Context, reference: string): Promise<{ configured: boolean; writable: boolean }> {
+  const status = await ctx.credentials.describe(credentialRef(reference))
+  return { configured: status.configured, writable: status.writable }
 }
 
 function resolveCredentialReference(value: string, path: string): string {

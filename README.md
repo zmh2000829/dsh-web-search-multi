@@ -61,6 +61,12 @@ All providers accept the top-level `requestTimeoutMs` setting from `1000` throug
 
 The same configurations are available as ready-to-use files under `examples/`; use `dsh --profile web --patch examples/wikipedia.patch.yml` for a temporary override.
 
+### Web UI
+
+Open **Settings → Plugins → Plugin configuration → Multi-provider web search**. The card lets you select all four providers, edit provider-specific options, and save Brave or Tavily keys without putting a secret in settings. A saved key goes through DSH credentials and the card receives only its configured/writable status. Provider and option changes apply to the next search without restarting DSH.
+
+The stock **Web search** card belongs to the bundled DeepSeek provider. Use the separately named **Multi-provider web search** card for this plugin.
+
 ### SearXNG
 
 ```yaml
@@ -160,6 +166,7 @@ The tests mock every paid API request and verify authentication, credential rota
 - Returned JSON is validated before it reaches DSH.
 - API keys are sent only in provider-defined authorization headers and are not included in URLs or results.
 - API keys remain in DSH-managed credential storage and are resolved once per search.
+- The browser settings endpoint accepts only loopback same-origin requests, rejects cross-site writes, caps request bodies, and never returns key values.
 - The plugin implements search only; it does not enable arbitrary URL fetching.
 
 ## Compared with AnySearch DSH

@@ -61,6 +61,12 @@ curl -fsS -X POST http://127.0.0.1:8080/search \
 
 `examples/` 包含可直接使用的同款配置；执行 `dsh --profile web --patch examples/wikipedia.patch.yml` 可以临时覆盖当前选择。
 
+### Web 界面
+
+打开 **设置 → 插件 → 插件配置 → 多源网页搜索**。该卡片可以选择四种提供方、编辑各自参数，并直接保存 Brave 或 Tavily 密钥；密钥通过 DSH credentials 写入，不会进入 settings。卡片只读取“已配置/可写”状态。提供方或参数保存后，下一次搜索立即生效，无需重启 DSH。
+
+页面原有的 **网页搜索** 卡片属于内置 DeepSeek 提供方。本插件使用名称明确的 **多源网页搜索** 卡片，请不要混用。
+
 ### SearXNG
 
 ```yaml
@@ -160,6 +166,7 @@ dsh web
 - 外部 JSON 在进入 DSH 前会经过校验。
 - API key 只通过提供方规定的认证 header 发送，不会出现在 URL 或结果中。
 - API key 始终由 DSH 凭据存储管理，并在每次搜索时解析一次。
+- 浏览器配置接口只接受回环地址上的同源请求，拒绝跨站写入、限制请求体大小，而且永不返回密钥值。
 - 插件只实现搜索，不会开启任意 URL 抓取。
 
 ## 与 AnySearch DSH 的区别
