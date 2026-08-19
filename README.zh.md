@@ -12,6 +12,7 @@
 | [`wikipedia`](https://www.mediawiki.org/wiki/API:Search) | 否 | 否 | 免费的 Wikimedia 公共 API | 只覆盖百科知识 |
 | [`tavily`](https://docs.tavily.com/documentation/api-reference/endpoint/search) | 是 | 是 | 每月免费额度，用完后付费 | 需要账户并受额度限制 |
 | [`brave`](https://api-dashboard.search.brave.com/documentation) | 是 | 是 | 每月赠送额度，用完后付费 | 需要订阅设置并受额度限制 |
+| [`gemini`](https://ai.google.dev/gemini-api/docs/google-search) | 是 | 是 | Google AI Pro 可领取每月 Cloud credits | API 与消费端会员分开，必须启用 Cloud Billing |
 
 价格和额度可能变化，部署前应检查提供方的当前条款。插件只把查询发送给选中的提供方，不会隐式回退或同时请求多个来源。
 
@@ -65,7 +66,7 @@ curl -fsS -X POST http://127.0.0.1:8080/search \
 
 ### Web 界面
 
-打开 **设置 → 插件 → 插件配置 → 多源网页搜索**。该卡片可以选择四种提供方、编辑各自参数，并直接保存 Brave 或 Tavily 密钥；密钥通过 DSH credentials 写入，不会进入 settings。卡片只读取“已配置/可写”状态。点击 **测试配置** 会用当前表单草稿执行一次真实的 `DeepSeek` 查询，不需要先保存；成功时显示耗时、结果数和首条标题，失败时显示提供方返回的错误。提供方或参数保存后，下一次搜索立即生效，无需重启 DSH。
+打开 **设置 → 插件 → 插件配置 → 多源网页搜索**。该卡片可以选择五种提供方、编辑各自参数，并直接保存 Brave、Tavily 或 Gemini 密钥；密钥通过 DSH credentials 写入，不会进入 settings。卡片只读取“已配置/可写”状态。点击 **测试配置** 会用当前表单草稿执行一次真实的 `DeepSeek` 查询，不需要先保存；成功时显示耗时、结果数和首条标题，失败时显示提供方返回的错误。提供方或参数保存后，下一次搜索立即生效，无需重启 DSH。
 
 页面原有的 **网页搜索** 卡片属于内置 DeepSeek 提供方。本插件使用名称明确的 **多源网页搜索** 卡片，请不要混用。
 
@@ -131,6 +132,28 @@ export BRAVE_SEARCH_API_KEY='...'
 ```
 
 `apiKeyEnv` 是 DSH 凭据引用，不是明文密钥。对应值可来自继承的环境变量、`$DSH_HOME/.credentials.yaml` 或 DSH 提供方设置界面。插件每次搜索都会重新解析，因此轮换密钥无需重启 DSH。
+
+### Gemini Google Search
+
+Google AI Pro 的消费端会员与 Gemini API 使用层级分开，但个人会员包含 Google Developer Program 权益，可领取每月 10 美元 Google Cloud credits，并用于包括 Gemini API 在内的 Cloud 服务：
+
+1. 打开 [Google Developer Program My Benefits](https://developers.google.com/profile/u/me/my-benefits)，激活与 Google AI Pro 相同账号的权益，并把每月 Cloud credit 兑换到一个 Cloud Billing 账号。
+2. 在 [Google AI Studio](https://aistudio.google.com/app/apikey) 创建或导入绑定该 Billing 账号的项目，然后创建 API Key。
+3. 如果该账号采用预付费结算，必须先让 AI Studio 的付费余额大于 0 美元，促销赠金才会生效；Google 当前通常要求至少预付 10 美元。
+4. 在 Web 卡片选择 **Gemini（API、Google Search Grounding）**，填写 Key，先点击 **测试配置**，成功后再保存。
+
+```yaml
+- id: web-search-multi
+  config:
+    provider: gemini
+    gemini:
+      apiKeyEnv: GEMINI_API_KEY
+      model: gemini-3.5-flash-lite
+```
+
+该后端调用 Gemini `generateContent` 的 `google_search` 工具，只把 `groundingMetadata` 中的网页引用映射成 DSH 搜索结果。默认模型用于控制 token 成本。Google 当前对 Gemini 3.x 付费层提供每月共享的免费 Google Search grounding 请求额度；模型输入和输出 token 仍按 Gemini API 规则计费，一次调用也可能触发多条搜索查询。
+
+SuperGrok 不包含 xAI API 余额。Grok 与 xAI API 可以使用同一账号，但账单分开；xAI API 需要单独创建 `XAI_API_KEY` 并充值，因此本插件不会把 SuperGrok 登录或会员额度当作 API 凭据。
 
 ## 开启与关闭
 

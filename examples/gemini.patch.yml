@@ -1,0 +1,6 @@
+- id: web-search-multi
+  config:
+    provider: gemini
+    gemini:
+      apiKeyEnv: GEMINI_API_KEY
+      model: gemini-3.5-flash-lite

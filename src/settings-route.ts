@@ -17,6 +17,7 @@ export interface BrowserSettingsSnapshot {
   readonly credentials: {
     readonly brave: CredentialStatus
     readonly tavily: CredentialStatus
+    readonly gemini: CredentialStatus
   }
 }
 

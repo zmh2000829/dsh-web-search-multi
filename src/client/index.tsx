@@ -7,7 +7,7 @@ import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 
 const SETTINGS_PATH = '/web-search-multi/settings'
 
-type Provider = 'searxng' | 'wikipedia' | 'tavily' | 'brave'
+type Provider = 'searxng' | 'wikipedia' | 'tavily' | 'brave' | 'gemini'
 
 interface SearchConfig {
   provider: Provider
@@ -15,6 +15,7 @@ interface SearchConfig {
   searxng: { baseURL: string; language: string; categories?: string | undefined; safeSearch: 0 | 1 | 2 }
   wikipedia: { language: string }
   tavily: { apiKeyEnv: string; searchDepth: 'basic' | 'advanced' | 'fast' | 'ultra-fast'; topic: 'general' | 'news' | 'finance' }
+  gemini: { apiKeyEnv: string; model: string }
   brave: { apiKeyEnv: string; country?: string | undefined; searchLanguage?: string | undefined; safeSearch: 'off' | 'moderate' | 'strict' }
 }
 
@@ -25,7 +26,7 @@ interface CredentialState {
 
 interface SettingsSnapshot {
   config: SearchConfig
-  credentials: { brave: CredentialState; tavily: CredentialState }
+  credentials: { brave: CredentialState; tavily: CredentialState; gemini: CredentialState }
 }
 
 interface SettingsTestResult {
@@ -136,7 +137,7 @@ export function MultiSearchSettingsCard() {
       <button type="button" style={header} aria-expanded={open} aria-label={`${open ? '收起' : '展开'}设置: 多源网页搜索`} onClick={() => { setOpen(value => !value) }}>
         <span style={headText}>
           <span style={name}>多源网页搜索</span>
-          <span style={description}>选择 SearXNG、Wikipedia、Tavily 或 Brave，并安全保存 API Key。</span>
+          <span style={description}>选择 SearXNG、Wikipedia、Tavily、Brave 或 Gemini Google Search。</span>
         </span>
         {dirty || apiKey !== '' ? <span style={{ fontSize: 12, color: '#d28b26' }}>未保存</span> : null}
         <span aria-hidden="true" style={{ transform: open ? 'rotate(180deg)' : undefined }}>⌄</span>
@@ -150,6 +151,7 @@ export function MultiSearchSettingsCard() {
                 <option value="wikipedia">Wikipedia（免费、百科）</option>
                 <option value="tavily">Tavily（API、面向 AI）</option>
                 <option value="brave">Brave Search（API、通用网页）</option>
+                <option value="gemini">Gemini（API、Google Search Grounding）</option>
               </SelectField>
               <TextField label="请求超时（毫秒）" type="number" value={String(draft.requestTimeoutMs)} onChange={value => { edit({ ...draft, requestTimeoutMs: Number(value) }) }} hint="范围 1000–55000，默认 25000。" />
             </div>
@@ -182,6 +184,11 @@ function ProviderFields(props: { draft: SearchConfig; snapshot?: SettingsSnapsho
     <TextField label="Wikipedia 语言" value={draft.wikipedia.language} onChange={language => { props.edit({ ...draft, wikipedia: { language } }) }} hint="语言子域，例如 zh、en、ja。" />
   </>
   const credential = props.snapshot?.credentials[draft.provider]
+  if (draft.provider === 'gemini') return <>
+    <p style={notice}><strong>Google AI Pro 与 Gemini API 分开计费。</strong><br />请先在 Google Developer Program 领取每月 Cloud credits、绑定启用 Cloud Billing 的项目，再从 Google AI Studio 创建 API Key。</p>
+    <PasswordField provider="gemini" value={props.apiKey} state={credential} onChange={props.setApiKey} />
+    <TextField label="Gemini 模型" value={draft.gemini.model} onChange={model => { props.edit({ ...draft, gemini: { ...draft.gemini, model } }) }} hint="默认 gemini-3.5-flash-lite；必须支持 Google Search Grounding。" />
+  </>
   return <>
     <PasswordField provider={draft.provider} value={props.apiKey} state={credential} onChange={props.setApiKey} />
     {draft.provider === 'tavily' ? <>
@@ -203,8 +210,8 @@ function SelectField(props: { label: string; value: string; onChange: (value: st
   return <label style={field(props.first)}><span style={label}>{props.label}</span><select style={input} value={props.value} onChange={event => { props.onChange(event.target.value) }}>{props.children}</select></label>
 }
 
-function PasswordField(props: { provider: 'brave' | 'tavily'; value: string; state?: CredentialState | undefined; onChange: (value: string) => void }) {
-  const reference = props.provider === 'brave' ? 'BRAVE_SEARCH_API_KEY' : 'TAVILY_API_KEY'
+function PasswordField(props: { provider: 'brave' | 'tavily' | 'gemini'; value: string; state?: CredentialState | undefined; onChange: (value: string) => void }) {
+  const reference = props.provider === 'brave' ? 'BRAVE_SEARCH_API_KEY' : props.provider === 'tavily' ? 'TAVILY_API_KEY' : 'GEMINI_API_KEY'
   const configured = props.state?.configured === true
   const writable = props.state?.writable !== false
   return <label style={field()}><span style={fieldHead}><span style={label}>API Key</span><span style={{ borderRadius: 999, padding: '1px 8px', fontSize: 11, lineHeight: '17px', color: 'var(--dsw-alias-label-tertiary)' }}>{configured ? '已配置' : '未配置'}</span></span><input style={input} type="password" autoComplete="off" value={props.value} disabled={!writable} onChange={event => { props.onChange(event.target.value) }} /><span style={hint}>{writable ? `保存到 DSH 凭据 ${reference}；留空保持不变。` : '当前由启动环境提供，Web 中不可覆盖。'}</span></label>
@@ -220,6 +227,7 @@ function valid(config: SearchConfig | undefined): boolean {
       return false
     }
   }
+  if (config.provider === 'gemini') return /^[a-z0-9][a-z0-9._-]{0,99}$/.test(config.gemini.model)
   return config.provider !== 'wikipedia' || /^[a-z][a-z0-9-]{0,19}$/.test(config.wikipedia.language)
 }
 

@@ -1,7 +1,7 @@
 {
   "name": "dsh-web-search-multi",
-  "version": "0.3.0",
-  "description": "Configurable SearXNG, Brave, Tavily, and Wikipedia search provider for DeepSeek Harness",
+  "version": "0.4.0",
+  "description": "Configurable SearXNG, Brave, Tavily, Gemini, and Wikipedia search provider for DeepSeek Harness",
   "homepage": "https://github.com/zmh2000829/dsh-web-search-multi#readme",
   "bugs": {
     "url": "https://github.com/zmh2000829/dsh-web-search-multi/issues"
@@ -69,6 +69,8 @@
     "searxng",
     "brave-search",
     "tavily",
+    "gemini",
+    "google-search-grounding",
     "wikipedia"
   ],
   "license": "MIT",

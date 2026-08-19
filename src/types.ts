@@ -1,7 +1,7 @@
 import type { WebSearchProvider } from '@deepseek-ai/dsh-web'
 
 /** Search backends supported by this plugin. */
-export type ProviderKind = 'searxng' | 'brave' | 'tavily' | 'wikipedia'
+export type ProviderKind = 'searxng' | 'brave' | 'tavily' | 'gemini' | 'wikipedia'
 
 /** Internal provider selected by the plugin configuration. */
 export interface SearchBackend extends WebSearchProvider {
@@ -33,6 +33,12 @@ export interface TavilyConfig {
   readonly apiKeyEnv?: string
   readonly searchDepth?: 'basic' | 'advanced' | 'fast' | 'ultra-fast'
   readonly topic?: 'general' | 'news' | 'finance'
+}
+
+/** Gemini API configuration for Google Search grounding. */
+export interface GeminiConfig {
+  readonly apiKeyEnv?: string
+  readonly model?: string
 }
 
 /** Wikipedia Action API configuration. */

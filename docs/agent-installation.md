@@ -25,7 +25,7 @@ docker compose -f deploy/searxng/compose.yml up -d
 
 ## Configure a provider
 
-Edit `$DSH_HOME/profiles/web/cordis.patch.yml` and use one complete configuration from `examples/`. Brave and Tavily use DSH credential references such as `BRAVE_SEARCH_API_KEY`; never insert a literal key into Cordis YAML.
+Edit `$DSH_HOME/profiles/web/cordis.patch.yml` and use one complete configuration from `examples/`. Brave, Tavily, and Gemini use DSH credential references such as `GEMINI_API_KEY`; never insert a literal key into Cordis YAML.
 
 ## Verify
 

@@ -29,6 +29,7 @@ for (const required of [
   'deploy/searxng/compose.yml',
   'deploy/searxng/settings.yml',
   'docs/agent-installation.md',
+  'examples/gemini.patch.yml',
 ]) {
   assert.ok(files.has(required), `package is missing ${required}`)
 }

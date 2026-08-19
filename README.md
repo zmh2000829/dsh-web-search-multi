@@ -12,6 +12,7 @@ A configurable [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harnes
 | [`wikipedia`](https://www.mediawiki.org/wiki/API:Search) | No | No | Free public Wikimedia API | Encyclopedic knowledge only |
 | [`tavily`](https://docs.tavily.com/documentation/api-reference/endpoint/search) | Yes | Yes | Free monthly credits, then paid | Account and usage quota |
 | [`brave`](https://api-dashboard.search.brave.com/documentation) | Yes | Yes | Monthly credits, then paid | Subscription setup and usage quota |
+| [`gemini`](https://ai.google.dev/gemini-api/docs/google-search) | Yes | Yes | Google AI Pro can redeem monthly Cloud credits | API billing is separate and requires Cloud Billing |
 
 Pricing and quotas can change. Check the provider's current terms before deployment. The plugin sends each query only to the selected provider; it has no implicit fallback or fan-out.
 
@@ -65,7 +66,7 @@ The same configurations are available as ready-to-use files under `examples/`; u
 
 ### Web UI
 
-Open **Settings → Plugins → Plugin configuration → Multi-provider web search**. The card lets you select all four providers, edit provider-specific options, and save Brave or Tavily keys without putting a secret in settings. A saved key goes through DSH credentials and the card receives only its configured/writable status. **Test configuration** runs one real `DeepSeek` query against the current draft without saving first; success reports latency, result count, and the first title, while failure reports the provider error. Provider and option changes apply to the next search without restarting DSH.
+Open **Settings → Plugins → Plugin configuration → Multi-provider web search**. The card lets you select all five providers, edit provider-specific options, and save Brave, Tavily, or Gemini keys without putting a secret in settings. A saved key goes through DSH credentials and the card receives only its configured/writable status. **Test configuration** runs one real `DeepSeek` query against the current draft without saving first; success reports latency, result count, and the first title, while failure reports the provider error. Provider and option changes apply to the next search without restarting DSH.
 
 The stock **Web search** card belongs to the bundled DeepSeek provider. Use the separately named **Multi-provider web search** card for this plugin.
 
@@ -131,6 +132,28 @@ export BRAVE_SEARCH_API_KEY='...'
 ```
 
 `apiKeyEnv` is a DSH credential reference, not a literal secret. Its value can come from the inherited environment, `$DSH_HOME/.credentials.yaml`, or the DSH provider settings UI. It is resolved for every search, so a rotated key is used without restarting DSH.
+
+### Gemini Google Search
+
+The consumer Google AI Pro plan and Gemini API usage tiers are separate. A personal subscription does include Google Developer Program benefits that can grant $10 in monthly Google Cloud credits usable with Cloud services including the Gemini API:
+
+1. Open [Google Developer Program My Benefits](https://developers.google.com/profile/u/me/my-benefits), activate the benefit with the same account as Google AI Pro, and redeem the monthly credit to a Cloud Billing account.
+2. In [Google AI Studio](https://aistudio.google.com/app/apikey), create or import a project linked to that billing account, then create an API key.
+3. For Prepay billing, AI Studio requires a positive paid balance before promotional credits activate; Google currently commonly requires a minimum $10 prepayment.
+4. Select **Gemini (API, Google Search Grounding)** in the Web card, enter the key, test the draft, then save it.
+
+```yaml
+- id: web-search-multi
+  config:
+    provider: gemini
+    gemini:
+      apiKeyEnv: GEMINI_API_KEY
+      model: gemini-3.5-flash-lite
+```
+
+This backend invokes Gemini `generateContent` with the `google_search` tool and maps only web citations from `groundingMetadata` into DSH search results. The default model limits token cost. Google currently includes a shared monthly allowance for Gemini 3.x Google Search grounding on the paid tier; model input/output tokens remain billable, and one API call can issue multiple search queries.
+
+SuperGrok does not include xAI API credit. Grok and the xAI API may share an account, but their billing is separate; the API requires a separately funded `XAI_API_KEY`, so this plugin does not treat a SuperGrok login or subscription quota as an API credential.
 
 ## Enable and disable
 

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { BraveBackend, TavilyBackend } from '../src/index.ts'
+import { BraveBackend, GeminiBackend, TavilyBackend } from '../src/index.ts'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -61,6 +61,37 @@ describe('TavilyBackend', () => {
   it('fails at request time when the credential is absent', async () => {
     const backend = new TavilyBackend(async () => undefined, 'TAVILY_API_KEY', {})
     await expect(backend.search({ query: 'agent harness' })).rejects.toThrow('TAVILY_API_KEY is not configured')
+  })
+})
+
+describe('GeminiBackend', () => {
+  it('uses Google Search grounding and maps unique web citations', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      expect(String(input)).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent')
+      expect(new Headers(init?.headers).get('x-goog-api-key')).toBe('gemini-secret')
+      expect(JSON.parse(String(init?.body))).toEqual({
+        contents: [{ parts: [{ text: 'Search the web for this query and answer with grounded citations: agent harness' }] }],
+        tools: [{ google_search: {} }],
+        generationConfig: { maxOutputTokens: 256, temperature: 0 },
+      })
+      return jsonResponse({
+        candidates: [{
+          groundingMetadata: {
+            groundingChunks: [
+              { web: { uri: 'https://example.com/one', title: 'First source' } },
+              { web: { uri: 'https://example.com/one', title: 'Duplicate source' } },
+              { web: { uri: 'https://example.com/two', title: 'Second source' } },
+            ],
+          },
+        }],
+      })
+    }))
+    const result = await new GeminiBackend(async () => 'gemini-secret', 'GEMINI_API_KEY', 'gemini-3.5-flash-lite')
+      .search({ query: 'agent harness', maxResults: 1 })
+    expect(result).toEqual({
+      sources: [{ url: 'https://example.com/one', title: 'First source' }],
+      truncated: true,
+    })
   })
 })
 

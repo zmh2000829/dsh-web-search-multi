@@ -78,6 +78,7 @@ function snapshot() {
     credentials: {
       brave: { configured: false, writable: true },
       tavily: { configured: true, writable: true },
+      gemini: { configured: false, writable: true },
     },
   }
 }

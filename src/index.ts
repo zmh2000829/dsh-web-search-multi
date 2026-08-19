@@ -8,17 +8,19 @@ import { installSettingsSection, settingsNamespace } from '@deepseek-ai/dsh-sett
 import z from '@deepseek-ai/schemastery'
 import type { WebSearchProvider } from '@deepseek-ai/dsh-web'
 import { BraveBackend } from './brave.ts'
+import { GeminiBackend } from './gemini.ts'
 import { DEFAULT_REQUEST_TIMEOUT_MS } from './http.ts'
 import { SETTINGS_PATH, settingsHandler } from './settings-route.ts'
 import { SearxngBackend, endpointFor } from './searxng.ts'
 import { TavilyBackend } from './tavily.ts'
-import type { BraveConfig, CredentialReader, ProviderKind, SearchBackend, SearxngConfig, TavilyConfig, WikipediaConfig } from './types.ts'
+import type { BraveConfig, CredentialReader, GeminiConfig, ProviderKind, SearchBackend, SearxngConfig, TavilyConfig, WikipediaConfig } from './types.ts'
 import { WikipediaBackend } from './wikipedia.ts'
 
 export { BraveBackend } from './brave.ts'
+export { GeminiBackend } from './gemini.ts'
 export { SearxngBackend, endpointFor } from './searxng.ts'
 export { TavilyBackend } from './tavily.ts'
-export type { BraveConfig, CredentialReader, ProviderKind, SearchBackend, SearxngConfig, TavilyConfig, WikipediaConfig } from './types.ts'
+export type { BraveConfig, CredentialReader, GeminiConfig, ProviderKind, SearchBackend, SearxngConfig, TavilyConfig, WikipediaConfig } from './types.ts'
 export { WikipediaBackend } from './wikipedia.ts'
 
 /** Stable provider id selected by the host `web` service. */
@@ -27,6 +29,10 @@ export const PROVIDER_ID = 'configurable-search'
 export const BRAVE_API_KEY_ENV = 'BRAVE_SEARCH_API_KEY'
 /** Default key environment variable for Tavily. */
 export const TAVILY_API_KEY_ENV = 'TAVILY_API_KEY'
+/** Default key environment variable for the Gemini Developer API. */
+export const GEMINI_API_KEY_ENV = 'GEMINI_API_KEY'
+/** Cost-conscious Gemini model used for Google Search grounding. */
+export const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash-lite'
 /** Default SearXNG instance configured by the shipped bundle. */
 export const SEARXNG_BASE_URL_ENV = 'SEARXNG_BASE_URL'
 /** Settings namespace consumed by the browser card and Host provider. */
@@ -44,6 +50,7 @@ export interface Config {
   readonly searxng?: SearxngConfig
   readonly brave?: BraveConfig
   readonly tavily?: TavilyConfig
+  readonly gemini?: GeminiConfig
   readonly wikipedia?: WikipediaConfig
 }
 
@@ -67,16 +74,22 @@ const TavilySchema: z<TavilyConfig> = z.object({
   topic: z.union(['general', 'news', 'finance'] as const).default('general'),
 })
 
+const GeminiSchema: z<GeminiConfig> = z.object({
+  apiKeyEnv: z.string().role('credential-ref').default(GEMINI_API_KEY_ENV),
+  model: z.string().default(DEFAULT_GEMINI_MODEL),
+})
+
 const WikipediaSchema: z<WikipediaConfig> = z.object({
   language: z.string().default('en'),
 })
 
 export const Config: z<Config> = z.object({
-  provider: z.union(['searxng', 'brave', 'tavily', 'wikipedia'] as const).default('searxng'),
+  provider: z.union(['searxng', 'brave', 'tavily', 'gemini', 'wikipedia'] as const).default('searxng'),
   requestTimeoutMs: z.number().min(1_000).max(55_000).step(1_000).default(DEFAULT_REQUEST_TIMEOUT_MS),
   searxng: SearxngSchema,
   brave: BraveSchema,
   tavily: TavilySchema,
+  gemini: GeminiSchema,
   wikipedia: WikipediaSchema,
 })
 
@@ -117,6 +130,15 @@ export function createBackend(config: Config, environment: EnvironmentReader, cr
       const settings = config.tavily ?? {}
       const apiKeyEnv = resolveCredentialReference(settings.apiKeyEnv ?? TAVILY_API_KEY_ENV, 'tavily.apiKeyEnv')
       return new TavilyBackend(() => credentials(apiKeyEnv), apiKeyEnv, settings, requestTimeoutMs)
+    }
+    case 'gemini': {
+      const settings = config.gemini ?? {}
+      const apiKeyEnv = resolveCredentialReference(settings.apiKeyEnv ?? GEMINI_API_KEY_ENV, 'gemini.apiKeyEnv')
+      const model = settings.model ?? DEFAULT_GEMINI_MODEL
+      if (!/^[a-z0-9][a-z0-9._-]{0,99}$/.test(model)) {
+        throw new TypeError('gemini.model must be a Gemini model id without a path')
+      }
+      return new GeminiBackend(() => credentials(apiKeyEnv), apiKeyEnv, model, requestTimeoutMs)
     }
     case 'wikipedia': {
       const language = config.wikipedia?.language ?? 'en'
@@ -161,6 +183,7 @@ export function apply(ctx: Context, config: Config): void {
         credentials: {
           brave: await credentialStatus(webCtx, active.brave?.apiKeyEnv ?? BRAVE_API_KEY_ENV),
           tavily: await credentialStatus(webCtx, active.tavily?.apiKeyEnv ?? TAVILY_API_KEY_ENV),
+          gemini: await credentialStatus(webCtx, active.gemini?.apiKeyEnv ?? GEMINI_API_KEY_ENV),
         },
       }
     }
@@ -171,16 +194,11 @@ export function apply(ctx: Context, config: Config): void {
         read: snapshot,
         test: async (value, apiKey) => {
           const candidate = value as Config
-          const selected = candidate.provider ?? 'searxng'
           const key = apiKey?.trim()
-          if (key !== undefined && key.length > 0 && selected !== 'brave' && selected !== 'tavily') {
-            throw new TypeError('an API key can only be tested with Brave or Tavily')
+          const reference = credentialReferenceFor(candidate)
+          if (key !== undefined && key.length > 0 && reference === undefined) {
+            throw new TypeError('an API key can only be tested with Brave, Tavily, or Gemini')
           }
-          const reference = selected === 'brave'
-            ? candidate.brave?.apiKeyEnv ?? BRAVE_API_KEY_ENV
-            : selected === 'tavily'
-              ? candidate.tavily?.apiKeyEnv ?? TAVILY_API_KEY_ENV
-              : undefined
           const testCredentials: CredentialReader = async requested => (
             key !== undefined && key.length > 0 && requested === reference ? key : credentials(requested)
           )
@@ -198,13 +216,8 @@ export function apply(ctx: Context, config: Config): void {
         write: async (value, apiKey) => {
           await webCtx.settings.update(WEB_SEARCH_MULTI_SETTINGS_NAMESPACE, value as Config)
           if (apiKey !== undefined && apiKey.trim().length > 0) {
-            const selected = current().provider ?? 'searxng'
-            if (selected !== 'brave' && selected !== 'tavily') {
-              throw new TypeError('an API key can only be stored for Brave or Tavily')
-            }
-            const reference = selected === 'brave'
-              ? current().brave?.apiKeyEnv ?? BRAVE_API_KEY_ENV
-              : current().tavily?.apiKeyEnv ?? TAVILY_API_KEY_ENV
+            const reference = credentialReferenceFor(current())
+            if (reference === undefined) throw new TypeError('an API key can only be stored for Brave, Tavily, or Gemini')
             await webCtx.credentials.set(credentialRef(reference), apiKey.trim())
           }
           return snapshot()
@@ -235,7 +248,21 @@ function configForBrowser(config: Config, environment: EnvironmentReader): Confi
       searchDepth: config.tavily?.searchDepth ?? 'basic',
       topic: config.tavily?.topic ?? 'general',
     },
+    gemini: {
+      apiKeyEnv: config.gemini?.apiKeyEnv ?? GEMINI_API_KEY_ENV,
+      model: config.gemini?.model ?? DEFAULT_GEMINI_MODEL,
+    },
     wikipedia: { language: config.wikipedia?.language ?? 'en' },
+  }
+}
+
+function credentialReferenceFor(config: Config): string | undefined {
+  switch (config.provider ?? 'searxng') {
+    case 'brave': return config.brave?.apiKeyEnv ?? BRAVE_API_KEY_ENV
+    case 'tavily': return config.tavily?.apiKeyEnv ?? TAVILY_API_KEY_ENV
+    case 'gemini': return config.gemini?.apiKeyEnv ?? GEMINI_API_KEY_ENV
+    case 'searxng':
+    case 'wikipedia': return undefined
   }
 }
 
