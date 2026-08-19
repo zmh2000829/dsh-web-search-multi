@@ -9,7 +9,9 @@ const packed = spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', [
 ], { cwd: root, encoding: 'utf8' })
 
 assert.equal(packed.status, 0, packed.error?.message || packed.stderr || 'npm pack --dry-run failed')
-const [manifest] = JSON.parse(packed.stdout)
+const jsonStart = packed.stdout.search(/\[\s*\{\s*"id"\s*:/)
+assert.notEqual(jsonStart, -1, `npm pack --dry-run returned no JSON manifest:\n${packed.stdout}`)
+const [manifest] = JSON.parse(packed.stdout.slice(jsonStart))
 assert.ok(manifest, 'npm pack --dry-run returned no manifest')
 
 const files = new Set(manifest.files.map(file => file.path.replaceAll('\\', '/')))
