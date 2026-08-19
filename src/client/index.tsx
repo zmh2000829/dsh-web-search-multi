@@ -137,7 +137,7 @@ export function MultiSearchSettingsCard() {
       <button type="button" style={header} aria-expanded={open} aria-label={`${open ? '收起' : '展开'}设置: 多源网页搜索`} onClick={() => { setOpen(value => !value) }}>
         <span style={headText}>
           <span style={name}>多源网页搜索</span>
-          <span style={description}>选择 SearXNG、Wikipedia、Tavily、Brave 或 Gemini Google Search。</span>
+          <span style={description}>传统搜索与 Gemini AI Grounded Search，可配置、可测试。</span>
         </span>
         {dirty || apiKey !== '' ? <span style={{ fontSize: 12, color: '#d28b26' }}>未保存</span> : null}
         <span aria-hidden="true" style={{ transform: open ? 'rotate(180deg)' : undefined }}>⌄</span>
@@ -151,7 +151,7 @@ export function MultiSearchSettingsCard() {
                 <option value="wikipedia">Wikipedia（免费、百科）</option>
                 <option value="tavily">Tavily（API、面向 AI）</option>
                 <option value="brave">Brave Search（API、通用网页）</option>
-                <option value="gemini">Gemini（API、Google Search Grounding）</option>
+                <option value="gemini">Gemini（AI Grounded Search）</option>
               </SelectField>
               <TextField label="请求超时（毫秒）" type="number" value={String(draft.requestTimeoutMs)} onChange={value => { edit({ ...draft, requestTimeoutMs: Number(value) }) }} hint="范围 1000–55000，默认 25000。" />
             </div>
@@ -185,7 +185,7 @@ function ProviderFields(props: { draft: SearchConfig; snapshot?: SettingsSnapsho
   </>
   const credential = props.snapshot?.credentials[draft.provider]
   if (draft.provider === 'gemini') return <>
-    <p style={notice}><strong>Google AI Pro 与 Gemini API 分开计费。</strong><br />请先在 Google Developer Program 领取每月 Cloud credits、绑定启用 Cloud Billing 的项目，再从 Google AI Studio 创建 API Key。</p>
+    <p style={notice}><strong>这是 Gemini 模型 + Google Search，不是传统搜索 API。</strong><br />普通查询使用 Search Grounding；查询中包含完整 URL 时会同时启用 URL Context。模型答案和每条引用摘要都会返回给 DSH，并产生模型 token 与搜索工具用量。</p>
     <PasswordField provider="gemini" value={props.apiKey} state={credential} onChange={props.setApiKey} />
     <TextField label="Gemini 模型" value={draft.gemini.model} onChange={model => { props.edit({ ...draft, gemini: { ...draft.gemini, model } }) }} hint="默认 gemini-3.5-flash-lite；必须支持 Google Search Grounding。" />
   </>

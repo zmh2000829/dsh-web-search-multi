@@ -204,7 +204,10 @@ export function apply(ctx: Context, config: Config): void {
           )
           const candidateBackend = createBackend(candidate, environment, testCredentials)
           const startedAt = Date.now()
-          const result = await candidateBackend.search({ query: 'DeepSeek', maxResults: 1 })
+          const testQuery = (candidate.provider ?? 'searxng') === 'gemini'
+            ? 'Inspect https://ai.google.dev/gemini-api/docs/url-context'
+            : 'DeepSeek'
+          const result = await candidateBackend.search({ query: testQuery, maxResults: 1 })
           const firstTitle = result.sources[0]?.title?.slice(0, 120)
           return {
             provider: candidateBackend.kind,

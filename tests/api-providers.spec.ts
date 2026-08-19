@@ -65,22 +65,28 @@ describe('TavilyBackend', () => {
 })
 
 describe('GeminiBackend', () => {
-  it('uses Google Search grounding and maps unique web citations', async () => {
+  it('uses Google Search grounding and maps the answer, citation snippets, and unique sources', async () => {
     vi.stubGlobal('fetch', vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
       expect(String(input)).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent')
       expect(new Headers(init?.headers).get('x-goog-api-key')).toBe('gemini-secret')
       expect(JSON.parse(String(init?.body))).toEqual({
-        contents: [{ parts: [{ text: 'Search the web for this query and answer with grounded citations: agent harness' }] }],
+        contents: [{ parts: [{ text: 'Search the web for this query and answer concisely with grounded citations: agent harness' }] }],
         tools: [{ google_search: {} }],
         generationConfig: { maxOutputTokens: 256, temperature: 0 },
       })
       return jsonResponse({
         candidates: [{
+          content: { parts: [{ text: 'A grounded answer.' }] },
           groundingMetadata: {
             groundingChunks: [
               { web: { uri: 'https://example.com/one', title: 'First source' } },
               { web: { uri: 'https://example.com/one', title: 'Duplicate source' } },
               { web: { uri: 'https://example.com/two', title: 'Second source' } },
+            ],
+            groundingSupports: [
+              { segment: { text: 'First cited fact.' }, groundingChunkIndices: [0] },
+              { segment: { text: 'Additional fact.' }, groundingChunkIndices: [1] },
+              { segment: { text: 'Second cited fact.' }, groundingChunkIndices: [2] },
             ],
           },
         }],
@@ -89,9 +95,31 @@ describe('GeminiBackend', () => {
     const result = await new GeminiBackend(async () => 'gemini-secret', 'GEMINI_API_KEY', 'gemini-3.5-flash-lite')
       .search({ query: 'agent harness', maxResults: 1 })
     expect(result).toEqual({
-      sources: [{ url: 'https://example.com/one', title: 'First source' }],
+      content: 'A grounded answer.',
+      sources: [{ url: 'https://example.com/one', title: 'First source', snippet: 'First cited fact. Additional fact.' }],
       truncated: true,
     })
+  })
+
+  it('combines URL Context with Google Search for explicit URLs', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (_input: string | URL | Request, init?: RequestInit) => {
+      expect(JSON.parse(String(init?.body))).toEqual({
+        contents: [{ parts: [{ text: 'Inspect every explicit URL with URL context, use Google Search only for necessary supporting information, and answer concisely with citations: inspect https://github.com/volcengine/OpenViking' }] }],
+        tools: [{ url_context: {} }, { google_search: {} }],
+        generationConfig: { maxOutputTokens: 256, temperature: 0 },
+      })
+      return jsonResponse({
+        candidates: [{
+          content: { parts: [{ text: 'The repository contains a DSH example.' }] },
+          groundingMetadata: {
+            groundingChunks: [{ web: { uri: 'https://github.com/volcengine/OpenViking', title: 'OpenViking' } }],
+          },
+        }],
+      })
+    }))
+    const result = await new GeminiBackend(async () => 'gemini-secret', 'GEMINI_API_KEY', 'gemini-3.5-flash-lite')
+      .search({ query: 'inspect https://github.com/volcengine/OpenViking' })
+    expect(result.content).toBe('The repository contains a DSH example.')
   })
 })
 

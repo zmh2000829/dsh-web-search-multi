@@ -3,7 +3,7 @@ import { WebError } from '@deepseek-ai/dsh-web'
 /** Default deadline kept below the Harness web-search tool deadline. */
 export const DEFAULT_REQUEST_TIMEOUT_MS = 25_000
 
-const USER_AGENT = 'dsh-web-search-multi/0.4.0 (+https://github.com/zmh2000829/dsh-web-search-multi)'
+const USER_AGENT = 'dsh-web-search-multi/0.5.0 (+https://github.com/zmh2000829/dsh-web-search-multi)'
 
 /** Per-request transport controls shared by every backend. */
 export interface FetchJsonOptions {

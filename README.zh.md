@@ -140,7 +140,7 @@ Google AI Pro 的消费端会员与 Gemini API 使用层级分开，但个人会
 1. 打开 [Google Developer Program My Benefits](https://developers.google.com/profile/u/me/my-benefits)，激活与 Google AI Pro 相同账号的权益，并把每月 Cloud credit 兑换到一个 Cloud Billing 账号。
 2. 在 [Google AI Studio](https://aistudio.google.com/app/apikey) 创建或导入绑定该 Billing 账号的项目，然后创建 API Key。
 3. 如果该账号采用预付费结算，必须先让 AI Studio 的付费余额大于 0 美元，促销赠金才会生效；Google 当前通常要求至少预付 10 美元。
-4. 在 Web 卡片选择 **Gemini（API、Google Search Grounding）**，填写 Key，先点击 **测试配置**，成功后再保存。
+4. 在 Web 卡片选择 **Gemini（AI Grounded Search）**，填写 Key，先点击 **测试配置**，成功后再保存。
 
 ```yaml
 - id: web-search-multi
@@ -151,7 +151,11 @@ Google AI Pro 的消费端会员与 Gemini API 使用层级分开，但个人会
       model: gemini-3.5-flash-lite
 ```
 
-该后端调用 Gemini `generateContent` 的 `google_search` 工具，只把 `groundingMetadata` 中的网页引用映射成 DSH 搜索结果。默认模型用于控制 token 成本。Google 当前对 Gemini 3.x 付费层提供每月共享的免费 Google Search grounding 请求额度；模型输入和输出 token 仍按 Gemini API 规则计费，一次调用也可能触发多条搜索查询。
+该后端是 Gemini 模型与 Google Search 的组合能力，不是传统搜索 API。普通查询启用 `google_search`；查询中出现完整 HTTP(S) URL 时，同时启用 `url_context`，让 Gemini 读取指定页面，再用 Google Search 补充必要资料。插件把模型生成的简短答案写入 DSH 的搜索 `content`，并把 `groundingSupports` 对应文本写入各来源的 `snippet`，因此 Agent 不再只看到域名和跳转链接。Web 中的 Gemini 测试会读取 Google 官方 URL Context 文档，以同时验证 API Key、URL Context 和 Search Grounding。
+
+Google Grounding 可能返回 `vertexaisearch.cloud.google.com/grounding-api-redirect/...` 引用链接；这是提供方返回的可点击引用，不代表插件切换到了其他搜索源。插件保留该链接，不在服务端绕过 Google 的引用跳转。对于需要逐文件比较的 GitHub 仓库，Agent 仍应直接读取或 clone 源码；搜索摘要不能替代源码证据。
+
+默认模型用于控制 token 成本。Google 当前对 Gemini 3.x 付费层提供每月共享的免费 Google Search grounding 请求额度；模型输入和输出 token、URL Context 取回的页面内容仍按 Gemini API 规则计费，一次调用也可能触发多条搜索查询。
 
 SuperGrok 不包含 xAI API 余额。Grok 与 xAI API 可以使用同一账号，但账单分开；xAI API 需要单独创建 `XAI_API_KEY` 并充值，因此本插件不会把 SuperGrok 登录或会员额度当作 API 凭据。
 

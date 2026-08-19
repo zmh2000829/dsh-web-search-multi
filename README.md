@@ -140,7 +140,7 @@ The consumer Google AI Pro plan and Gemini API usage tiers are separate. A perso
 1. Open [Google Developer Program My Benefits](https://developers.google.com/profile/u/me/my-benefits), activate the benefit with the same account as Google AI Pro, and redeem the monthly credit to a Cloud Billing account.
 2. In [Google AI Studio](https://aistudio.google.com/app/apikey), create or import a project linked to that billing account, then create an API key.
 3. For Prepay billing, AI Studio requires a positive paid balance before promotional credits activate; Google currently commonly requires a minimum $10 prepayment.
-4. Select **Gemini (API, Google Search Grounding)** in the Web card, enter the key, test the draft, then save it.
+4. Select **Gemini (AI Grounded Search)** in the Web card, enter the key, test the draft, then save it.
 
 ```yaml
 - id: web-search-multi
@@ -151,7 +151,11 @@ The consumer Google AI Pro plan and Gemini API usage tiers are separate. A perso
       model: gemini-3.5-flash-lite
 ```
 
-This backend invokes Gemini `generateContent` with the `google_search` tool and maps only web citations from `groundingMetadata` into DSH search results. The default model limits token cost. Google currently includes a shared monthly allowance for Gemini 3.x Google Search grounding on the paid tier; model input/output tokens remain billable, and one API call can issue multiple search queries.
+This backend combines a Gemini model with Google Search; it is not a traditional search API. Plain queries enable `google_search`. A query containing a complete HTTP(S) URL also enables `url_context`, so Gemini reads the specified page and uses Google Search only for necessary supporting material. The plugin puts the model's concise answer in DSH search `content` and maps citation text from `groundingSupports` into each source `snippet`, so the Agent receives more than domains and redirect links. The browser test reads Google's official URL Context documentation to verify the key, URL Context, and Search Grounding together.
+
+Google Grounding may return `vertexaisearch.cloud.google.com/grounding-api-redirect/...` citation links. Those are clickable provider citations, not evidence that the plugin selected a different search source. The plugin preserves them instead of bypassing Google's attribution redirect on the server. For file-by-file GitHub comparisons, the Agent should still read or clone the repository; a search summary is not source evidence.
+
+The default model limits token cost. Google currently includes a shared monthly allowance for Gemini 3.x Google Search grounding on the paid tier; model input/output tokens and URL Context page content remain billable, and one API call can issue multiple search queries.
 
 SuperGrok does not include xAI API credit. Grok and the xAI API may share an account, but their billing is separate; the API requires a separately funded `XAI_API_KEY`, so this plugin does not treat a SuperGrok login or subscription quota as an API credential.
 
