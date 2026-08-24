@@ -2,6 +2,8 @@ import { WebError } from '@deepseek-ai/dsh-web'
 
 /** Default deadline kept below the Harness web-search tool deadline. */
 export const DEFAULT_REQUEST_TIMEOUT_MS = 25_000
+/** Maximum bytes accepted from any external JSON response. */
+export const MAX_RESPONSE_BYTES = 2 * 1024 * 1024
 
 const USER_AGENT = 'dsh-web-search-multi/0.2.0 (+https://github.com/zmh2000829/dsh-web-search-multi)'
 
@@ -56,8 +58,31 @@ export async function fetchJson(
   }
 
   try {
-    return await response.json()
+    const declaredLength = Number(response.headers.get('content-length'))
+    if (Number.isFinite(declaredLength) && declaredLength > MAX_RESPONSE_BYTES) {
+      await response.body?.cancel()
+      throw responseTooLarge(provider)
+    }
+    if (response.body === null) return JSON.parse('') as unknown
+
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    let size = 0
+    let text = ''
+    while (true) {
+      const chunk = await reader.read()
+      if (chunk.done) break
+      size += chunk.value.byteLength
+      if (size > MAX_RESPONSE_BYTES) {
+        await reader.cancel()
+        throw responseTooLarge(provider)
+      }
+      text += decoder.decode(chunk.value, { stream: true })
+    }
+    text += decoder.decode()
+    return JSON.parse(text) as unknown
   } catch (error: unknown) {
+    if (error instanceof WebError) throw error
     if (options.signal?.aborted === true) throw new WebError(`${provider} search aborted`, 'WEB_ABORTED', { cause: error })
     if (timeoutController.signal.aborted) {
       throw new WebError(`${provider} request timed out after ${String(timeoutMs)}ms`, 'WEB_PROVIDER_ERROR', { cause: error })
@@ -66,6 +91,10 @@ export async function fetchJson(
   } finally {
     clearTimeout(timeout)
   }
+}
+
+function responseTooLarge(provider: string): WebError {
+  return new WebError(`${provider} response exceeded ${String(MAX_RESPONSE_BYTES)} bytes`, 'WEB_PROVIDER_ERROR')
 }
 
 /** Resolve a non-empty credential for one API request without caching it. */

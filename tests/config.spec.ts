@@ -12,6 +12,10 @@ describe('createBackend', () => {
     expect(createBackend({ provider: 'wikipedia', wikipedia: { language: 'zh' } }, noEnvironment, noCredential).kind).toBe('wikipedia')
   })
 
+  it('uses keyless Wikipedia for an unconfigured first run', () => {
+    expect(createBackend({}, () => undefined, async () => undefined).kind).toBe('wikipedia')
+  })
+
   it('rejects unusable endpoints, credential references, and timeouts', () => {
     const noEnvironment = () => undefined
     const noCredential = async () => undefined

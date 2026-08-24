@@ -84,7 +84,7 @@ const WikipediaSchema: z<WikipediaConfig> = z.object({
 })
 
 export const Config: z<Config> = z.object({
-  provider: z.union(['searxng', 'brave', 'tavily', 'gemini', 'wikipedia'] as const).default('searxng'),
+  provider: z.union(['searxng', 'brave', 'tavily', 'gemini', 'wikipedia'] as const).default('wikipedia'),
   requestTimeoutMs: z.number().min(1_000).max(55_000).step(1_000).default(DEFAULT_REQUEST_TIMEOUT_MS),
   searxng: SearxngSchema,
   brave: BraveSchema,
@@ -102,7 +102,7 @@ export function createBackend(config: Config, environment: EnvironmentReader, cr
   if (!Number.isInteger(requestTimeoutMs) || requestTimeoutMs < 1_000 || requestTimeoutMs > 55_000) {
     throw new TypeError('requestTimeoutMs must be an integer from 1000 through 55000')
   }
-  switch (config.provider ?? 'searxng') {
+  switch (config.provider ?? 'wikipedia') {
     case 'searxng': {
       const settings = config.searxng ?? {}
       const baseURL = settings.baseURL ?? environment(SEARXNG_BASE_URL_ENV) ?? ''
@@ -204,7 +204,7 @@ export function apply(ctx: Context, config: Config): void {
           )
           const candidateBackend = createBackend(candidate, environment, testCredentials)
           const startedAt = Date.now()
-          const testQuery = (candidate.provider ?? 'searxng') === 'gemini'
+          const testQuery = (candidate.provider ?? 'wikipedia') === 'gemini'
             ? 'Inspect https://ai.google.dev/gemini-api/docs/url-context'
             : 'DeepSeek'
           const result = await candidateBackend.search({ query: testQuery, maxResults: 1 })
@@ -232,7 +232,7 @@ export function apply(ctx: Context, config: Config): void {
 
 function configForBrowser(config: Config, environment: EnvironmentReader): Config {
   return {
-    provider: config.provider ?? 'searxng',
+    provider: config.provider ?? 'wikipedia',
     requestTimeoutMs: config.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS,
     searxng: {
       baseURL: config.searxng?.baseURL ?? environment(SEARXNG_BASE_URL_ENV) ?? '',
@@ -260,7 +260,7 @@ function configForBrowser(config: Config, environment: EnvironmentReader): Confi
 }
 
 function credentialReferenceFor(config: Config): string | undefined {
-  switch (config.provider ?? 'searxng') {
+  switch (config.provider ?? 'wikipedia') {
     case 'brave': return config.brave?.apiKeyEnv ?? BRAVE_API_KEY_ENV
     case 'tavily': return config.tavily?.apiKeyEnv ?? TAVILY_API_KEY_ENV
     case 'gemini': return config.gemini?.apiKeyEnv ?? GEMINI_API_KEY_ENV
