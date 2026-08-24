@@ -1,0 +1,58 @@
+/** Simplified Chinese dictionary (the key-set source of truth). */
+export const zh = {
+  'card.name': '多源网页搜索', 'card.description': '传统搜索与 Gemini AI Grounded Search，可配置、可测试。',
+  'card.expand': '展开设置：多源网页搜索', 'card.collapse': '收起设置：多源网页搜索',
+  'status.unsaved': '未保存', 'status.loading': '正在读取配置…', 'status.failure': '测试或保存失败：',
+  'status.success': '连接成功 · {count} 条结果 · {duration} ms',
+  'action.test': '测试配置', 'action.testing': '测试中…', 'action.discard': '放弃修改', 'action.save': '保存', 'action.saving': '保存中…',
+  'field.provider': '搜索提供方', 'field.timeout': '请求超时（毫秒）', 'field.timeoutHint': '范围 1000–55000，默认 25000。',
+  'provider.searxng': 'SearXNG（免费、自托管）', 'provider.wikipedia': 'Wikipedia（免费、百科）',
+  'provider.tavily': 'Tavily（API、面向 AI）', 'provider.brave': 'Brave Search（API、通用网页）', 'provider.gemini': 'Gemini（AI Grounded Search）',
+  'searxng.noticeTitle': 'SearXNG 不会由插件自动启动。',
+  'searxng.noticeBody': '首次使用请在插件目录运行 docker compose -f deploy/searxng/compose.yml up -d，然后点击下方“测试配置”。',
+  'searxng.url': 'SearXNG 地址', 'searxng.urlHint': '必须开启 JSON 输出，例如 http://127.0.0.1:8080。',
+  'searxng.language': '语言', 'searxng.languageHint': 'all、zh-CN、en 等。',
+  'searxng.categories': '分类（可选）', 'searxng.categoriesHint': '逗号分隔，例如 general,news。',
+  'field.safeSearch': '安全搜索', 'safeSearch.off': '关闭', 'safeSearch.moderate': '中等', 'safeSearch.strict': '严格',
+  'wikipedia.language': 'Wikipedia 语言', 'wikipedia.languageHint': '语言子域，例如 zh、en、ja。',
+  'gemini.noticeTitle': '这是 Gemini 模型 + Google Search，不是传统搜索 API。',
+  'gemini.noticeBody': '普通查询使用 Search Grounding；查询中包含完整 URL 时会同时启用 URL Context。模型答案和每条引用摘要都会返回给 DSH，并产生模型 token 与搜索工具用量。',
+  'gemini.model': 'Gemini 模型', 'gemini.modelHint': '默认 gemini-3.5-flash-lite；必须支持 Google Search Grounding。',
+  'tavily.depth': '搜索深度', 'tavily.topic': '主题',
+  'brave.country': '国家（可选）', 'brave.countryHint': '例如 US、CN。',
+  'brave.language': '搜索语言（可选）', 'brave.languageHint': '例如 en、zh-hans。',
+  'credential.configured': '已配置', 'credential.missing': '未配置',
+  'credential.writableHint': '保存到 DSH 凭据 {reference}；留空保持不变。',
+  'credential.readonlyHint': '当前由启动环境提供，Web 中不可覆盖。',
+} satisfies Record<string, string>
+
+/** Keys owned by the plugin settings card. */
+export type WebSearchMultiLocaleKey = keyof typeof zh
+
+/** English dictionary, checked against the complete Chinese key set. */
+export const en = {
+  'card.name': 'Multi-provider web search', 'card.description': 'Configurable, testable traditional search and Gemini AI Grounded Search.',
+  'card.expand': 'Expand settings: multi-provider web search', 'card.collapse': 'Collapse settings: multi-provider web search',
+  'status.unsaved': 'Unsaved', 'status.loading': 'Loading configuration…', 'status.failure': 'Test or save failed: ',
+  'status.success': 'Connected · {count} results · {duration} ms',
+  'action.test': 'Test configuration', 'action.testing': 'Testing…', 'action.discard': 'Discard changes', 'action.save': 'Save', 'action.saving': 'Saving…',
+  'field.provider': 'Search provider', 'field.timeout': 'Request timeout (milliseconds)', 'field.timeoutHint': 'From 1000 to 55000; default 25000.',
+  'provider.searxng': 'SearXNG (free, self-hosted)', 'provider.wikipedia': 'Wikipedia (free, encyclopedia)',
+  'provider.tavily': 'Tavily (API, AI-oriented)', 'provider.brave': 'Brave Search (API, general web)', 'provider.gemini': 'Gemini (AI Grounded Search)',
+  'searxng.noticeTitle': 'The plugin does not start SearXNG automatically.',
+  'searxng.noticeBody': 'For first use, run docker compose -f deploy/searxng/compose.yml up -d in the plugin directory, then select “Test configuration” below.',
+  'searxng.url': 'SearXNG URL', 'searxng.urlHint': 'JSON output must be enabled, for example http://127.0.0.1:8080.',
+  'searxng.language': 'Language', 'searxng.languageHint': 'For example all, zh-CN, or en.',
+  'searxng.categories': 'Categories (optional)', 'searxng.categoriesHint': 'Comma-separated, for example general,news.',
+  'field.safeSearch': 'Safe search', 'safeSearch.off': 'Off', 'safeSearch.moderate': 'Moderate', 'safeSearch.strict': 'Strict',
+  'wikipedia.language': 'Wikipedia language', 'wikipedia.languageHint': 'Language subdomain, for example zh, en, or ja.',
+  'gemini.noticeTitle': 'This is a Gemini model with Google Search, not a traditional search API.',
+  'gemini.noticeBody': 'Regular queries use Search Grounding. Queries containing a complete URL also enable URL Context. The model answer and citation summaries are returned to DSH and incur model-token and search-tool usage.',
+  'gemini.model': 'Gemini model', 'gemini.modelHint': 'Defaults to gemini-3.5-flash-lite; the model must support Google Search Grounding.',
+  'tavily.depth': 'Search depth', 'tavily.topic': 'Topic',
+  'brave.country': 'Country (optional)', 'brave.countryHint': 'For example US or CN.',
+  'brave.language': 'Search language (optional)', 'brave.languageHint': 'For example en or zh-hans.',
+  'credential.configured': 'Configured', 'credential.missing': 'Not configured',
+  'credential.writableHint': 'Saved as DSH credential {reference}; leave blank to keep the current value.',
+  'credential.readonlyHint': 'Provided by the launch environment and cannot be replaced in the Web UI.',
+} satisfies Record<WebSearchMultiLocaleKey, string>

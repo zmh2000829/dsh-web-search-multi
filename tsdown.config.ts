@@ -2,7 +2,7 @@ import type { UserConfig } from 'tsdown'
 
 const external = [
   'react', 'react/jsx-runtime', 'react-dom', 'react-dom/client',
-  '@deepseek-ai/cordis', '@deepseek-ai/dsh-client-runtime',
+  '@deepseek-ai/cordis', '@deepseek-ai/dsh-client-locale', '@deepseek-ai/dsh-client-runtime',
   '@deepseek-ai/dsh-client-ui-settings-plugins', '@deepseek-ai/dsh-client-ui-slots',
 ]
 

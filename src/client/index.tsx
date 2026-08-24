@@ -1,11 +1,21 @@
 /** Browser settings card for the multi-provider search plugin. */
 
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
-import type {} from '@deepseek-ai/dsh-client-ui-slots'
+import type { PropsLocale, TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { en, zh, type WebSearchMultiLocaleKey } from './locales.ts'
 
 const SETTINGS_PATH = '/web-search-multi/settings'
+const LOCALE_NAMESPACE = 'web-search-multi'
+
+declare module '@deepseek-ai/dsh-client-ui-slots' {
+  interface LocaleNamespaceMap {
+    /** Copy for the multi-provider web-search settings card. */
+    'web-search-multi': WebSearchMultiLocaleKey
+  }
+}
 
 type Provider = 'searxng' | 'wikipedia' | 'tavily' | 'brave' | 'gemini'
 
@@ -55,21 +65,20 @@ const statusText: CSSProperties = { flex: 1, minWidth: 150, margin: 0, fontSize:
 const notice: CSSProperties = { margin: '12px 0 0', padding: '10px 12px', borderRadius: 8, background: 'var(--dsw-alias-bg-module-platform)', color: 'var(--dsw-alias-label-secondary)', fontSize: 12, lineHeight: 1.6 }
 
 /** Client runtime dependencies. */
-export const inject = ['slots']
+export const inject = ['slots', 'locale']
 
 /** Register one plugin-owned card in DSH's existing plugin settings page. */
 export function apply(ctx: ClientContext): void {
+  ctx.effect(() => ctx.locale.register(LOCALE_NAMESPACE, { zh, en }), 'web-search-multi: dictionaries')
   ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
     name: 'settings.plugin.item',
-    // DSH currently exposes a fixed Host namespace directory to external
-    // cards. This unused card key is only a render anchor; all reads and
-    // writes still go through this plugin's own same-origin route.
-    key: 'ui-theme',
+    key: 'web-search-multi',
+    locale: LOCALE_NAMESPACE,
   }, MultiSearchSettingsCard))
 }
 
 /** Multi-provider form backed by the plugin's same-origin Host route. */
-export function MultiSearchSettingsCard() {
+export function MultiSearchSettingsCard({ t }: PropsLocale<typeof LOCALE_NAMESPACE>) {
   const [open, setOpen] = useState(false)
   const [snapshot, setSnapshot] = useState<SettingsSnapshot>()
   const [draft, setDraft] = useState<SearchConfig>()
@@ -134,36 +143,36 @@ export function MultiSearchSettingsCard() {
 
   return (
     <li style={card}>
-      <button type="button" style={header} aria-expanded={open} aria-label={`${open ? '收起' : '展开'}设置: 多源网页搜索`} onClick={() => { setOpen(value => !value) }}>
+      <button type="button" style={header} aria-expanded={open} aria-label={t(open ? 'card.collapse' : 'card.expand')} onClick={() => { setOpen(value => !value) }}>
         <span style={headText}>
-          <span style={name}>多源网页搜索</span>
-          <span style={description}>传统搜索与 Gemini AI Grounded Search，可配置、可测试。</span>
+          <span style={name}>{t('card.name')}</span>
+          <span style={description}>{t('card.description')}</span>
         </span>
-        {dirty || apiKey !== '' ? <span style={{ fontSize: 12, color: '#d28b26' }}>未保存</span> : null}
+        {dirty || apiKey !== '' ? <span style={{ fontSize: 12, color: '#d28b26' }}>{t('status.unsaved')}</span> : null}
         <span aria-hidden="true" style={{ transform: open ? 'rotate(180deg)' : undefined }}>⌄</span>
       </button>
       {open ? (
         <div style={body}>
-          {draft === undefined ? <p role="status">正在读取配置…</p> : <>
+          {draft === undefined ? <p role="status">{t('status.loading')}</p> : <>
             <div>
-              <SelectField first label="搜索提供方" value={draft.provider} onChange={value => { edit({ ...draft, provider: value as Provider }); setApiKey('') }}>
-                <option value="searxng">SearXNG（免费、自托管）</option>
-                <option value="wikipedia">Wikipedia（免费、百科）</option>
-                <option value="tavily">Tavily（API、面向 AI）</option>
-                <option value="brave">Brave Search（API、通用网页）</option>
-                <option value="gemini">Gemini（AI Grounded Search）</option>
+              <SelectField first label={t('field.provider')} value={draft.provider} onChange={value => { edit({ ...draft, provider: value as Provider }); setApiKey('') }}>
+                <option value="searxng">{t('provider.searxng')}</option>
+                <option value="wikipedia">{t('provider.wikipedia')}</option>
+                <option value="tavily">{t('provider.tavily')}</option>
+                <option value="brave">{t('provider.brave')}</option>
+                <option value="gemini">{t('provider.gemini')}</option>
               </SelectField>
-              <TextField label="请求超时（毫秒）" type="number" value={String(draft.requestTimeoutMs)} onChange={value => { edit({ ...draft, requestTimeoutMs: Number(value) }) }} hint="范围 1000–55000，默认 25000。" />
+              <TextField label={t('field.timeout')} type="number" value={String(draft.requestTimeoutMs)} onChange={value => { edit({ ...draft, requestTimeoutMs: Number(value) }) }} hint={t('field.timeoutHint')} />
             </div>
-            <ProviderFields draft={draft} snapshot={snapshot} apiKey={apiKey} setApiKey={(value) => { setApiKey(value); setDirty(true); setTestResult(undefined); setError(undefined) }} edit={edit} />
+            <ProviderFields t={t} draft={draft} snapshot={snapshot} apiKey={apiKey} setApiKey={(value) => { setApiKey(value); setDirty(true); setTestResult(undefined); setError(undefined) }} edit={edit} />
           </>}
           <div style={footer}>
-            <button type="button" style={{ ...button, ...(saving || testing || !valid(draft) ? disabledButton : {}) }} disabled={saving || testing || !valid(draft)} onClick={() => { void test() }}>{testing ? '测试中…' : '测试配置'}</button>
+            <button type="button" style={{ ...button, ...(saving || testing || !valid(draft) ? disabledButton : {}) }} disabled={saving || testing || !valid(draft)} onClick={() => { void test() }}>{t(testing ? 'action.testing' : 'action.test')}</button>
             {error === undefined && testResult === undefined ? <span style={statusText} /> : null}
-            {error === undefined || testResult !== undefined ? null : <p role="alert" style={{ ...statusText, color: 'var(--dsw-alias-label-error)' }}>测试或保存失败：{error}</p>}
-            {testResult === undefined ? null : <p role="status" style={{ ...statusText, color: 'var(--dsw-alias-label-success, #2f9e62)' }}>连接成功 · {testResult.resultCount} 条结果 · {testResult.durationMs} ms{testResult.firstTitle === undefined ? '' : ` · ${testResult.firstTitle}`}</p>}
-            <button type="button" style={{ ...button, ...(!dirty || saving || testing ? disabledButton : {}) }} disabled={!dirty || saving || testing} onClick={() => { if (snapshot !== undefined) { setDraft(snapshot.config); setApiKey(''); setDirty(false); setTestResult(undefined); setError(undefined) } }}>放弃修改</button>
-            <button type="button" style={{ ...primaryButton, ...(!dirty || saving || testing || !valid(draft) ? disabledButton : {}) }} disabled={!dirty || saving || testing || !valid(draft)} onClick={() => { void save() }}>{saving ? '保存中…' : '保存'}</button>
+            {error === undefined || testResult !== undefined ? null : <p role="alert" style={{ ...statusText, color: 'var(--dsw-alias-label-error)' }}>{t('status.failure')}{error}</p>}
+            {testResult === undefined ? null : <p role="status" style={{ ...statusText, color: 'var(--dsw-alias-label-success, #2f9e62)' }}>{t('status.success', { count: testResult.resultCount, duration: testResult.durationMs })}{testResult.firstTitle === undefined ? '' : ` · ${testResult.firstTitle}`}</p>}
+            <button type="button" style={{ ...button, ...(!dirty || saving || testing ? disabledButton : {}) }} disabled={!dirty || saving || testing} onClick={() => { if (snapshot !== undefined) { setDraft(snapshot.config); setApiKey(''); setDirty(false); setTestResult(undefined); setError(undefined) } }}>{t('action.discard')}</button>
+            <button type="button" style={{ ...primaryButton, ...(!dirty || saving || testing || !valid(draft) ? disabledButton : {}) }} disabled={!dirty || saving || testing || !valid(draft)} onClick={() => { void save() }}>{t(saving ? 'action.saving' : 'action.save')}</button>
           </div>
         </div>
       ) : null}
@@ -171,33 +180,33 @@ export function MultiSearchSettingsCard() {
   )
 }
 
-function ProviderFields(props: { draft: SearchConfig; snapshot?: SettingsSnapshot | undefined; apiKey: string; setApiKey: (value: string) => void; edit: (next: SearchConfig) => void }) {
+function ProviderFields(props: { t: TranslateNS<typeof LOCALE_NAMESPACE>; draft: SearchConfig; snapshot?: SettingsSnapshot | undefined; apiKey: string; setApiKey: (value: string) => void; edit: (next: SearchConfig) => void }) {
   const { draft } = props
   if (draft.provider === 'searxng') return <>
-    <p style={notice}><strong>SearXNG 不会由插件自动启动。</strong><br />首次使用请在插件目录运行 <code>docker compose -f deploy/searxng/compose.yml up -d</code>，然后点击下方“测试配置”。</p>
-    <TextField label="SearXNG 地址" value={draft.searxng.baseURL} onChange={baseURL => { props.edit({ ...draft, searxng: { ...draft.searxng, baseURL } }) }} hint="必须开启 JSON 输出，例如 http://127.0.0.1:8080。" />
-    <TextField label="语言" value={draft.searxng.language} onChange={language => { props.edit({ ...draft, searxng: { ...draft.searxng, language } }) }} hint="all、zh-CN、en 等。" />
-    <TextField label="分类（可选）" value={draft.searxng.categories ?? ''} onChange={categories => { props.edit({ ...draft, searxng: { ...draft.searxng, ...(categories === '' ? { categories: undefined } : { categories }) } }) }} hint="逗号分隔，例如 general,news。" />
-    <SelectField label="安全搜索" value={String(draft.searxng.safeSearch)} onChange={value => { props.edit({ ...draft, searxng: { ...draft.searxng, safeSearch: Number(value) as 0 | 1 | 2 } }) }}><option value="0">关闭</option><option value="1">中等</option><option value="2">严格</option></SelectField>
+    <p style={notice}><strong>{props.t('searxng.noticeTitle')}</strong><br />{props.t('searxng.noticeBody')}</p>
+    <TextField label={props.t('searxng.url')} value={draft.searxng.baseURL} onChange={baseURL => { props.edit({ ...draft, searxng: { ...draft.searxng, baseURL } }) }} hint={props.t('searxng.urlHint')} />
+    <TextField label={props.t('searxng.language')} value={draft.searxng.language} onChange={language => { props.edit({ ...draft, searxng: { ...draft.searxng, language } }) }} hint={props.t('searxng.languageHint')} />
+    <TextField label={props.t('searxng.categories')} value={draft.searxng.categories ?? ''} onChange={categories => { props.edit({ ...draft, searxng: { ...draft.searxng, ...(categories === '' ? { categories: undefined } : { categories }) } }) }} hint={props.t('searxng.categoriesHint')} />
+    <SelectField label={props.t('field.safeSearch')} value={String(draft.searxng.safeSearch)} onChange={value => { props.edit({ ...draft, searxng: { ...draft.searxng, safeSearch: Number(value) as 0 | 1 | 2 } }) }}><option value="0">{props.t('safeSearch.off')}</option><option value="1">{props.t('safeSearch.moderate')}</option><option value="2">{props.t('safeSearch.strict')}</option></SelectField>
   </>
   if (draft.provider === 'wikipedia') return <>
-    <TextField label="Wikipedia 语言" value={draft.wikipedia.language} onChange={language => { props.edit({ ...draft, wikipedia: { language } }) }} hint="语言子域，例如 zh、en、ja。" />
+    <TextField label={props.t('wikipedia.language')} value={draft.wikipedia.language} onChange={language => { props.edit({ ...draft, wikipedia: { language } }) }} hint={props.t('wikipedia.languageHint')} />
   </>
   const credential = props.snapshot?.credentials[draft.provider]
   if (draft.provider === 'gemini') return <>
-    <p style={notice}><strong>这是 Gemini 模型 + Google Search，不是传统搜索 API。</strong><br />普通查询使用 Search Grounding；查询中包含完整 URL 时会同时启用 URL Context。模型答案和每条引用摘要都会返回给 DSH，并产生模型 token 与搜索工具用量。</p>
-    <PasswordField provider="gemini" value={props.apiKey} state={credential} onChange={props.setApiKey} />
-    <TextField label="Gemini 模型" value={draft.gemini.model} onChange={model => { props.edit({ ...draft, gemini: { ...draft.gemini, model } }) }} hint="默认 gemini-3.5-flash-lite；必须支持 Google Search Grounding。" />
+    <p style={notice}><strong>{props.t('gemini.noticeTitle')}</strong><br />{props.t('gemini.noticeBody')}</p>
+    <PasswordField t={props.t} provider="gemini" value={props.apiKey} state={credential} onChange={props.setApiKey} />
+    <TextField label={props.t('gemini.model')} value={draft.gemini.model} onChange={model => { props.edit({ ...draft, gemini: { ...draft.gemini, model } }) }} hint={props.t('gemini.modelHint')} />
   </>
   return <>
-    <PasswordField provider={draft.provider} value={props.apiKey} state={credential} onChange={props.setApiKey} />
+    <PasswordField t={props.t} provider={draft.provider} value={props.apiKey} state={credential} onChange={props.setApiKey} />
     {draft.provider === 'tavily' ? <>
-      <SelectField label="搜索深度" value={draft.tavily.searchDepth} onChange={searchDepth => { props.edit({ ...draft, tavily: { ...draft.tavily, searchDepth: searchDepth as SearchConfig['tavily']['searchDepth'] } }) }}><option value="basic">Basic</option><option value="advanced">Advanced</option><option value="fast">Fast</option><option value="ultra-fast">Ultra fast</option></SelectField>
-      <SelectField label="主题" value={draft.tavily.topic} onChange={topic => { props.edit({ ...draft, tavily: { ...draft.tavily, topic: topic as SearchConfig['tavily']['topic'] } }) }}><option value="general">General</option><option value="news">News</option><option value="finance">Finance</option></SelectField>
+      <SelectField label={props.t('tavily.depth')} value={draft.tavily.searchDepth} onChange={searchDepth => { props.edit({ ...draft, tavily: { ...draft.tavily, searchDepth: searchDepth as SearchConfig['tavily']['searchDepth'] } }) }}><option value="basic">Basic</option><option value="advanced">Advanced</option><option value="fast">Fast</option><option value="ultra-fast">Ultra fast</option></SelectField>
+      <SelectField label={props.t('tavily.topic')} value={draft.tavily.topic} onChange={topic => { props.edit({ ...draft, tavily: { ...draft.tavily, topic: topic as SearchConfig['tavily']['topic'] } }) }}><option value="general">General</option><option value="news">News</option><option value="finance">Finance</option></SelectField>
     </> : <>
-      <TextField label="国家（可选）" value={draft.brave.country ?? ''} onChange={country => { props.edit({ ...draft, brave: { ...draft.brave, ...(country === '' ? { country: undefined } : { country }) } }) }} hint="例如 US、CN。" />
-      <TextField label="搜索语言（可选）" value={draft.brave.searchLanguage ?? ''} onChange={searchLanguage => { props.edit({ ...draft, brave: { ...draft.brave, ...(searchLanguage === '' ? { searchLanguage: undefined } : { searchLanguage }) } }) }} hint="例如 en、zh-hans。" />
-      <SelectField label="安全搜索" value={draft.brave.safeSearch} onChange={safeSearch => { props.edit({ ...draft, brave: { ...draft.brave, safeSearch: safeSearch as SearchConfig['brave']['safeSearch'] } }) }}><option value="off">关闭</option><option value="moderate">中等</option><option value="strict">严格</option></SelectField>
+      <TextField label={props.t('brave.country')} value={draft.brave.country ?? ''} onChange={country => { props.edit({ ...draft, brave: { ...draft.brave, ...(country === '' ? { country: undefined } : { country }) } }) }} hint={props.t('brave.countryHint')} />
+      <TextField label={props.t('brave.language')} value={draft.brave.searchLanguage ?? ''} onChange={searchLanguage => { props.edit({ ...draft, brave: { ...draft.brave, ...(searchLanguage === '' ? { searchLanguage: undefined } : { searchLanguage }) } }) }} hint={props.t('brave.languageHint')} />
+      <SelectField label={props.t('field.safeSearch')} value={draft.brave.safeSearch} onChange={safeSearch => { props.edit({ ...draft, brave: { ...draft.brave, safeSearch: safeSearch as SearchConfig['brave']['safeSearch'] } }) }}><option value="off">{props.t('safeSearch.off')}</option><option value="moderate">{props.t('safeSearch.moderate')}</option><option value="strict">{props.t('safeSearch.strict')}</option></SelectField>
     </>}
   </>
 }
@@ -210,11 +219,11 @@ function SelectField(props: { label: string; value: string; onChange: (value: st
   return <label style={field(props.first)}><span style={label}>{props.label}</span><select style={input} value={props.value} onChange={event => { props.onChange(event.target.value) }}>{props.children}</select></label>
 }
 
-function PasswordField(props: { provider: 'brave' | 'tavily' | 'gemini'; value: string; state?: CredentialState | undefined; onChange: (value: string) => void }) {
+function PasswordField(props: { t: TranslateNS<typeof LOCALE_NAMESPACE>; provider: 'brave' | 'tavily' | 'gemini'; value: string; state?: CredentialState | undefined; onChange: (value: string) => void }) {
   const reference = props.provider === 'brave' ? 'BRAVE_SEARCH_API_KEY' : props.provider === 'tavily' ? 'TAVILY_API_KEY' : 'GEMINI_API_KEY'
   const configured = props.state?.configured === true
   const writable = props.state?.writable !== false
-  return <label style={field()}><span style={fieldHead}><span style={label}>API Key</span><span style={{ borderRadius: 999, padding: '1px 8px', fontSize: 11, lineHeight: '17px', color: 'var(--dsw-alias-label-tertiary)' }}>{configured ? '已配置' : '未配置'}</span></span><input style={input} type="password" autoComplete="off" value={props.value} disabled={!writable} onChange={event => { props.onChange(event.target.value) }} /><span style={hint}>{writable ? `保存到 DSH 凭据 ${reference}；留空保持不变。` : '当前由启动环境提供，Web 中不可覆盖。'}</span></label>
+  return <label style={field()}><span style={fieldHead}><span style={label}>API Key</span><span style={{ borderRadius: 999, padding: '1px 8px', fontSize: 11, lineHeight: '17px', color: 'var(--dsw-alias-label-tertiary)' }}>{props.t(configured ? 'credential.configured' : 'credential.missing')}</span></span><input style={input} type="password" autoComplete="off" value={props.value} disabled={!writable} onChange={event => { props.onChange(event.target.value) }} /><span style={hint}>{writable ? props.t('credential.writableHint', { reference }) : props.t('credential.readonlyHint')}</span></label>
 }
 
 function valid(config: SearchConfig | undefined): boolean {
