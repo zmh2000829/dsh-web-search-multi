@@ -18,13 +18,19 @@ Pricing and quotas can change. Check the provider's current terms before deploym
 
 ## Requirements
 
-- `dsh` `0.1.0-rc.7` or newer compatible release
+- `dsh` `0.1.1-rc.2`
 - Node.js `^22.19` or `>=24`
-- A JSON-enabled SearXNG instance, or credentials for the selected API provider
+- No credential for the default Wikipedia backend; a JSON-enabled SearXNG instance or API credential for the other backends
 
 ## Install
 
-From this checkout:
+Recommended npm installation:
+
+```sh
+dsh plugin --profile web add dsh-web-search-multi@0.2.0
+```
+
+From a local clone for development:
 
 ```sh
 npm install
@@ -40,7 +46,7 @@ dsh plugin --profile web add github:zmh2000829/dsh-web-search-multi
 
 For a Git source install, pnpm may initially block the package's `prepare` build. Follow the `allowBuilds` instruction printed by `dsh`, then repeat the install command.
 
-The package is a DSH bundle. Installation adds its `cordis.patch.yml`, selects the stable provider id `configurable-search`, and defaults to connecting to SearXNG at `http://127.0.0.1:8080`. **The plugin does not install or start SearXNG.**
+The package is a DSH bundle. Installation adds its `cordis.patch.yml`, selects the stable provider id `configurable-search`, and starts with keyless English Wikipedia so the first test works without another service. Select SearXNG, Brave, Tavily, or Gemini in the Web UI when broader web coverage is needed. **The plugin does not install or start SearXNG.**
 
 ## Free local SearXNG
 
@@ -193,14 +199,17 @@ The tests mock every paid API request and verify authentication, credential rota
 - Queries leave the machine and are subject to the selected provider's privacy policy.
 - Redirects are rejected so a configured or fixed endpoint cannot silently forward a query elsewhere.
 - Returned JSON is validated before it reaches DSH.
+- External JSON responses are stopped at 2 MiB before parsing.
 - API keys are sent only in provider-defined authorization headers and are not included in URLs or results.
 - API keys remain in DSH-managed credential storage and are resolved once per search.
 - The browser settings and test endpoint accepts only loopback same-origin requests, rejects cross-site writes, caps request bodies, and never returns key values. A newly entered key is used only for that test request and is not written to credential storage.
 - The plugin implements search only; it does not enable arbitrary URL fetching.
 
-## Compared with AnySearch DSH
+## Positioning among search plugins
 
-[`anysearch-dsh`](https://github.com/anysearch-team/anysearch-dsh) integrates one hosted service and adds service-specific capability and batch-search tools. This plugin instead keeps DSH's native `web_search` surface and lets the operator select among self-hosted, keyless, and API-backed providers. It adopts the same useful operational patterns—per-request DSH credential resolution, bounded HTTP requests, package-content checks, a Node.js CI matrix, and secret scanning—without adding provider-specific tools to the model context.
+Several marketplace plugins specialize in SearXNG or Tavily, while projects such as [`dsh-websearch`](https://github.com/240xu/dsh-websearch), [`dsh-search-failover`](https://github.com/Walvez/dsh-search-failover), and [`dsh-free-search`](https://github.com/DDDMUC/dsh-free-search) emphasize concurrent fan-out or automatic failover. This plugin deliberately sends each query to exactly one selected backend. That makes network disclosure, quota use, and failure behavior predictable while preserving DSH's native `web_search` tool.
+
+Its distinct combination is self-hosted SearXNG, keyless Wikipedia, Brave, Tavily, and Gemini Search Grounding in one settings card. Gemini queries containing a complete URL additionally use URL Context and map grounded support text into DSH citation snippets. The plugin intentionally provides search only—no hidden fallback, provider-specific model tool, or arbitrary `web_fetch` capability.
 
 ## Development
 

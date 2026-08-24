@@ -19,6 +19,8 @@ for (const required of [
   'package.json',
   'README.md',
   'README.zh.md',
+  'CHANGELOG.md',
+  'SECURITY.md',
   'LICENSE',
   'cordis.patch.yml',
   'lib/index.js',

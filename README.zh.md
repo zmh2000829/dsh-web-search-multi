@@ -18,13 +18,19 @@
 
 ## 环境要求
 
-- `dsh` `0.1.0-rc.7` 或兼容的新版本
+- `dsh` `0.1.1-rc.2`
 - Node.js `^22.19` 或 `>=24`
-- 开启 JSON 输出的 SearXNG 实例，或所选 API 提供方的凭据
+- 默认 Wikipedia 后端无需凭据；其他后端需要开启 JSON 输出的 SearXNG 实例或对应 API 凭据
 
 ## 安装
 
-从当前源码目录安装：
+推荐从 npm 安装：
+
+```sh
+dsh plugin --profile web add dsh-web-search-multi@0.2.0
+```
+
+开发时从本地 clone 安装：
 
 ```sh
 npm install
@@ -40,7 +46,7 @@ dsh plugin --profile web add github:zmh2000829/dsh-web-search-multi
 
 通过 Git 源安装时，pnpm 第一次可能阻止包的 `prepare` 构建。按照 `dsh` 输出的 `allowBuilds` 提示完成授权，然后重新执行安装命令。
 
-该包是 DSH 组合包。安装会加入 `cordis.patch.yml`，选择稳定的 provider id `configurable-search`，并默认连接 `http://127.0.0.1:8080` 上的 SearXNG。**插件不会自动安装或启动 SearXNG。**
+该包是 DSH 组合包。安装会加入 `cordis.patch.yml`，选择稳定的 provider id `configurable-search`，并默认使用无需密钥的英文 Wikipedia，因此首次测试不依赖额外服务。需要通用网页检索时，可在 Web 设置中切换到 SearXNG、Brave、Tavily 或 Gemini。**插件不会自动安装或启动 SearXNG。**
 
 ## 免费的本地 SearXNG
 
@@ -193,14 +199,17 @@ dsh web
 - 查询会离开本机，并受所选提供方隐私政策约束。
 - 插件拒绝重定向，防止配置或固定端点把查询静默转发到其他位置。
 - 外部 JSON 在进入 DSH 前会经过校验。
+- 外部 JSON 响应超过 2 MiB 时会在解析前停止读取。
 - API key 只通过提供方规定的认证 header 发送，不会出现在 URL 或结果中。
 - API key 始终由 DSH 凭据存储管理，并在每次搜索时解析一次。
 - 浏览器配置和测试接口只接受回环地址上的同源请求，拒绝跨站写入、限制请求体大小，而且永不返回密钥值。测试时填写的新密钥只用于本次提供方请求，不会写入凭据存储。
 - 插件只实现搜索，不会开启任意 URL 抓取。
 
-## 与 AnySearch DSH 的区别
+## 与市场搜索插件的定位差异
 
-[`anysearch-dsh`](https://github.com/anysearch-team/anysearch-dsh) 对接单一托管服务，并增加了该服务专属的能力发现与批量搜索工具。本插件保持 DSH 原生 `web_search` 界面，让使用者在自托管、免密钥与 API 后端之间选择。项目吸收了它成熟的按请求解析 DSH 凭据、有界 HTTP 请求、包内容检查、Node.js CI 矩阵及密钥扫描做法，但不会给模型上下文增加提供方专属工具。
+市场中已有多个专注 SearXNG 或 Tavily 的插件；[`dsh-websearch`](https://github.com/240xu/dsh-websearch)、[`dsh-search-failover`](https://github.com/Walvez/dsh-search-failover) 和 [`dsh-free-search`](https://github.com/DDDMUC/dsh-free-search) 等项目更强调并发扇出或自动故障转移。本插件刻意让每次查询只进入一个明确选中的后端，因此网络披露范围、额度消耗和失败行为都更可预测，同时保持 DSH 原生 `web_search` 工具不变。
+
+本插件把自托管 SearXNG、免密钥 Wikipedia、Brave、Tavily 和 Gemini Search Grounding 放在同一个设置卡中。Gemini 查询出现完整 URL 时还会启用 URL Context，并把 grounded support 文本映射为 DSH 引用摘要。插件只提供搜索，不包含隐式回退、提供方专属模型工具或任意 `web_fetch` 能力。
 
 ## 开发
 
