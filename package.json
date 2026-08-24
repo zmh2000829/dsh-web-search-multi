@@ -55,7 +55,8 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && tsdown --config tsdown.config.ts",
+    "clean": "node scripts/clean.mjs",
+    "build": "npm run clean && tsc -p tsconfig.build.json && tsdown --config tsdown.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.client.json --noEmit",
     "test": "vitest run",
     "check:package": "node scripts/check-package.mjs",

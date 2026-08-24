@@ -37,6 +37,7 @@ for (const required of [
 for (const file of files) {
   assert.ok(!file.startsWith('src/'), `source file leaked into package: ${file}`)
   assert.ok(!file.startsWith('tests/'), `test file leaked into package: ${file}`)
+  assert.ok(!file.startsWith('lib/client/'), `unbundled browser module leaked into package: ${file}`)
   assert.ok(!file.endsWith('.env'), `environment file leaked into package: ${file}`)
 }
 
