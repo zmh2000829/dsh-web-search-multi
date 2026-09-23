@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.2
+
+- Add a default-on Web Search switch below the DSH composer, stored independently for each conversation.
+- Hide `web_search` and its prompt guidance when disabled, and deny direct search calls for that conversation; leave `web_fetch` and Grok Build unchanged.
+
 ## 0.2.1
 
 - Support DSH 0.1.5-rc.2 by using the current settings service and browser slot APIs.

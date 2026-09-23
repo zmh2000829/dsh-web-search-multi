@@ -4,6 +4,8 @@ import type { IncomingHttpHeaders, IncomingMessage, ServerResponse } from 'node:
 
 /** Exact same-origin route owned by this plugin. */
 export const SETTINGS_PATH = '/web-search-multi/settings'
+/** Same-origin route for the per-conversation search switch. */
+export const SEARCH_TOGGLE_PATH = '/web-search-multi/toggle'
 
 /** Credential status safe to render in a browser. */
 export interface CredentialStatus {
@@ -34,6 +36,52 @@ export interface SettingsApi {
   readonly read: () => Promise<BrowserSettingsSnapshot>
   readonly write: (config: unknown, apiKey: string | undefined) => Promise<BrowserSettingsSnapshot>
   readonly test: (config: unknown, apiKey: string | undefined) => Promise<SettingsTestResult>
+}
+
+/** Operations used by the conversation search switch. */
+export interface SearchToggleApi {
+  readonly read: (sessionId: string) => boolean
+  readonly write: (sessionId: string, enabled: boolean) => Promise<boolean>
+}
+
+/** Reject object-prototype keys and bound persisted state growth per identifier. */
+function validSessionId(value: unknown): value is string {
+  return typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(value)
+}
+
+/** Same-origin GET/PUT endpoint for one conversation's web_search setting. */
+export function searchToggleHandler(api: SearchToggleApi) {
+  return async (request: IncomingMessage, response: ServerResponse): Promise<void> => {
+    if (request.method === 'GET') {
+      if (!isTrustedSettingsRequest(request, false)) return forbidden(response)
+      const sessionId = new URL(request.url ?? '/', 'http://localhost').searchParams.get('sessionId')
+      if (!validSessionId(sessionId)) return json(response, 400, { error: 'invalid sessionId' })
+      return json(response, 200, { enabled: api.read(sessionId) })
+    }
+    if (request.method !== 'PUT') {
+      response.writeHead(405, { allow: 'GET, PUT' })
+      response.end()
+      return
+    }
+    if (!isTrustedSettingsRequest(request, true)) return forbidden(response)
+    if (singleHeader(request.headers, 'content-type')?.split(';', 1)[0] !== 'application/json') {
+      return json(response, 415, { error: 'content-type must be application/json' })
+    }
+    let input: unknown
+    try {
+      input = JSON.parse(await readBody(request, 16 * 1024))
+    } catch (error: unknown) {
+      return json(response, 400, { error: error instanceof Error ? error.message : String(error) })
+    }
+    if (!isRecord(input) || !validSessionId(input.sessionId) || typeof input.enabled !== 'boolean') {
+      return json(response, 400, { error: 'sessionId and enabled are required' })
+    }
+    try {
+      return json(response, 200, { enabled: await api.write(input.sessionId, input.enabled) })
+    } catch (error: unknown) {
+      return json(response, 400, { error: error instanceof Error ? error.message : String(error) })
+    }
+  }
 }
 
 interface RequestHeaders {

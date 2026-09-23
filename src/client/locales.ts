@@ -1,5 +1,8 @@
 /** Simplified Chinese dictionary (the key-set source of truth). */
 export const zh = {
+  'toggle.on': '联网搜索 · 开', 'toggle.off': '联网搜索 · 关',
+  'toggle.loading': '联网搜索 · 读取中', 'toggle.retry': '联网搜索 · 重试',
+  'toggle.hint': '仅控制当前 DSH 对话的 web_search；不影响 Grok Build 或 web_fetch。',
   'card.name': '多源网页搜索', 'card.description': '传统搜索与 Gemini AI Grounded Search，可配置、可测试。',
   'card.expand': '展开设置：多源网页搜索', 'card.collapse': '收起设置：多源网页搜索',
   'status.unsaved': '未保存', 'status.loading': '正在读取配置…', 'status.failure': '测试或保存失败：',
@@ -31,6 +34,9 @@ export type WebSearchMultiLocaleKey = keyof typeof zh
 
 /** English dictionary, checked against the complete Chinese key set. */
 export const en = {
+  'toggle.on': 'Web Search · On', 'toggle.off': 'Web Search · Off',
+  'toggle.loading': 'Web Search · Loading', 'toggle.retry': 'Web Search · Retry',
+  'toggle.hint': 'Controls web_search only for this DSH conversation; Grok Build and web_fetch are unchanged.',
   'card.name': 'Multi-provider web search', 'card.description': 'Configurable, testable traditional search and Gemini AI Grounded Search.',
   'card.expand': 'Expand settings: multi-provider web search', 'card.collapse': 'Collapse settings: multi-provider web search',
   'status.unsaved': 'Unsaved', 'status.loading': 'Loading configuration…', 'status.failure': 'Test or save failed: ',

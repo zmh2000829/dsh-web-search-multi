@@ -3,12 +3,15 @@
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
+import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type {} from '@deepseek-ai/dsh-client-ui-session/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
-import type { PropsLocale, TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
+import type { PropsLocale, PropsRuntime, TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import { en, zh, type WebSearchMultiLocaleKey } from './locales.ts'
 
 const SETTINGS_PATH = '/web-search-multi/settings'
+const SEARCH_TOGGLE_PATH = '/web-search-multi/toggle'
 const LOCALE_NAMESPACE = 'web-search-multi'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -76,6 +79,84 @@ export function apply(ctx: ClientContext): void {
     key: 'web-search-multi',
     locale: LOCALE_NAMESPACE,
   }, MultiSearchSettingsCard))
+  ctx.slots.inject('conversation.input.left', () => ctx.slots.register({
+    name: 'conversation.input.left',
+    id: 'web-search-multi-toggle',
+    order: 20,
+    label: 'Web Search',
+    locale: LOCALE_NAMESPACE,
+  }, ConversationSearchToggle))
+}
+
+/** Toggle web_search for the current DSH conversation. */
+export function ConversationSearchToggle({ sessionId, t }: PropsRuntime<'conversation.input.left'> & PropsLocale<typeof LOCALE_NAMESPACE>) {
+  const [enabled, setEnabled] = useState<boolean>()
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string>()
+  const [retry, setRetry] = useState(0)
+
+  useEffect(() => {
+    let current = true
+    setEnabled(undefined)
+    setError(undefined)
+    void readSearchToggle(sessionId).then(value => {
+      if (current) setEnabled(value)
+    }).catch(cause => {
+      if (current) setError(cause instanceof Error ? cause.message : String(cause))
+    })
+    return () => { current = false }
+  }, [sessionId, retry])
+
+  const change = async (): Promise<void> => {
+    if (saving) return
+    if (enabled === undefined) {
+      if (error !== undefined) setRetry(value => value + 1)
+      return
+    }
+    setSaving(true)
+    try {
+      setEnabled(await writeSearchToggle(sessionId, !enabled))
+      setError(undefined)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }} title={error ?? t('toggle.hint')}>
+      <button type="button" aria-pressed={enabled === true} disabled={(enabled === undefined && error === undefined) || saving}
+        style={{ ...button, padding: '4px 9px', opacity: enabled === undefined ? 0.55 : 1 }}
+        onClick={() => { void change() }}>
+        {enabled === undefined ? t(error === undefined ? 'toggle.loading' : 'toggle.retry') : enabled ? t('toggle.on') : t('toggle.off')}
+      </button>
+      {error && <span aria-label={error} style={{ color: '#c94848', fontSize: 12 }}>!</span>}
+    </span>
+  )
+}
+
+async function readSearchToggle(sessionId: string): Promise<boolean> {
+  return searchToggleRequest(`${SEARCH_TOGGLE_PATH}?sessionId=${encodeURIComponent(sessionId)}`, { method: 'GET' })
+}
+
+async function writeSearchToggle(sessionId: string, enabled: boolean): Promise<boolean> {
+  return searchToggleRequest(SEARCH_TOGGLE_PATH, {
+    method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sessionId, enabled }),
+  })
+}
+
+async function searchToggleRequest(path: string, init: RequestInit): Promise<boolean> {
+  const response = await fetch(path, init)
+  const value: unknown = await response.json()
+  if (!response.ok) {
+    throw new Error(typeof value === 'object' && value !== null && 'error' in value && typeof value.error === 'string'
+      ? value.error : `HTTP ${String(response.status)}`)
+  }
+  if (typeof value !== 'object' || value === null || !('enabled' in value) || typeof value.enabled !== 'boolean') {
+    throw new Error('Invalid search toggle response')
+  }
+  return value.enabled
 }
 
 /** Multi-provider form backed by the plugin's same-origin Host route. */

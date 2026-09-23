@@ -5,7 +5,7 @@ export const DEFAULT_REQUEST_TIMEOUT_MS = 25_000
 /** Maximum bytes accepted from any external JSON response. */
 export const MAX_RESPONSE_BYTES = 2 * 1024 * 1024
 
-const USER_AGENT = 'dsh-web-search-multi/0.2.1 (+https://github.com/zmh2000829/dsh-web-search-multi)'
+const USER_AGENT = 'dsh-web-search-multi/0.2.2 (+https://github.com/zmh2000829/dsh-web-search-multi)'
 
 /** Per-request transport controls shared by every backend. */
 export interface FetchJsonOptions {

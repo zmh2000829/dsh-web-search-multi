@@ -18,7 +18,7 @@ Pricing and quotas can change. Check the provider's current terms before deploym
 
 ## Requirements
 
-- Plugin `0.2.1` requires `dsh` `0.1.5-rc.2`. Plugin `0.2.0` targets DSH `0.1.1-rc.2` and is not compatible with the newer settings API.
+- Plugin `0.2.2` requires `dsh` `0.1.5-rc.2`. Plugin `0.2.0` targets DSH `0.1.1-rc.2` and is not compatible with the newer settings API.
 - Node.js `^22.19` or `>=24`
 - No credential for the default Wikipedia backend; a JSON-enabled SearXNG instance or API credential for the other backends
 
@@ -27,7 +27,7 @@ Pricing and quotas can change. Check the provider's current terms before deploym
 Recommended npm installation for DSH `0.1.5-rc.2`:
 
 ```sh
-dsh plugin --profile web add dsh-web-search-multi@0.2.1
+dsh plugin --profile web add dsh-web-search-multi@0.2.2
 ```
 
 From a local clone for development:
@@ -47,6 +47,8 @@ dsh plugin --profile web add dsh-web-search-multi@0.2.0
 For a Git source install, pnpm may initially block the package's `prepare` build. Follow the `allowBuilds` instruction printed by `dsh`, then repeat the install command.
 
 The package is a DSH bundle. Installation adds its `cordis.patch.yml`, selects the stable provider id `configurable-search`, and starts with keyless English Wikipedia so the first test works without another service. Select SearXNG, Brave, Tavily, or Gemini in the Web UI when broader web coverage is needed. **The plugin does not install or start SearXNG.**
+
+The composer tool row has a **Web Search · On/Off** switch for each conversation. It starts on, and the choice survives DSH restarts. Off removes `web_search` from that conversation's available tools and prompt guidance and blocks direct calls; it does not disable `web_fetch` or Grok Build's own search. A search already running when you switch off may finish; the new choice applies to subsequent tool calls and model requests. Provider selection in Settings is still shared across conversations.
 
 ## Free local SearXNG
 

@@ -1,16 +1,21 @@
 /** Configurable web search provider for DeepSeek Harness. */
 
 import type { Context } from '@deepseek-ai/cordis'
+import type {} from '@deepseek-ai/dsh-agent'
 import { credentialRef } from '@deepseek-ai/dsh-credentials'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import { launchEnvironmentOf } from '@deepseek-ai/dsh-launch-environment'
+import { SessionId } from '@deepseek-ai/dsh-session'
 import type {} from '@deepseek-ai/dsh-settings'
+import type {} from '@deepseek-ai/dsh-system-prompt'
+import type {} from '@deepseek-ai/dsh-tools'
 import z from '@deepseek-ai/schemastery'
 import type { WebSearchProvider } from '@deepseek-ai/dsh-web'
 import { BraveBackend } from './brave.ts'
 import { GeminiBackend } from './gemini.ts'
 import { DEFAULT_REQUEST_TIMEOUT_MS } from './http.ts'
-import { SETTINGS_PATH, settingsHandler } from './settings-route.ts'
+import { SearchToggle, SEARCH_TOGGLE_NAMESPACE, SearchToggleSettings } from './search-toggle.ts'
+import { SEARCH_TOGGLE_PATH, SETTINGS_PATH, searchToggleHandler, settingsHandler } from './settings-route.ts'
 import { SearxngBackend, endpointFor } from './searxng.ts'
 import { TavilyBackend } from './tavily.ts'
 import type { BraveConfig, CredentialReader, GeminiConfig, ProviderKind, SearchBackend, SearxngConfig, TavilyConfig, WikipediaConfig } from './types.ts'
@@ -41,7 +46,7 @@ export const WEB_SEARCH_MULTI_SETTINGS_NAMESPACE = 'web-search-multi'
 /** Cordis plugin name used in loader diagnostics. */
 export const name = 'web-search-multi'
 /** Host service required by this provider. */
-export const inject = ['web', 'credentials']
+export const inject = ['web', 'credentials', 'agents', 'tools', 'systemPrompt']
 
 /** Plugin configuration. Exactly one backend is active for each plugin row. */
 export interface Config {
@@ -229,6 +234,35 @@ export function apply(ctx: Context, config: Config): void {
         },
       }),
     }), 'web-search-multi: browser settings route')
+  })
+
+  ctx.inject(['webServer', 'settings'], (toggleCtx) => {
+    const scope = toggleCtx.settings.register(SEARCH_TOGGLE_NAMESPACE, SearchToggleSettings, {
+      base: { disabledSessions: {} },
+    })
+    const toggle = new SearchToggle(scope)
+    toggleCtx.effect(() => () => { toggle.dispose() }, 'web-search-multi: search restrictions')
+    toggleCtx.effect(() => scope.watch(() => {
+      for (const agent of toggleCtx.agents.list()) toggle.sync(agent)
+    }), 'web-search-multi: toggle settings observer')
+    toggleCtx.on('agent/created', ({ agent }) => { toggle.sync(agent) })
+    toggleCtx.on('agent/disposed', ({ agent }) => { toggle.detach(agent) })
+    for (const agent of toggleCtx.agents.list()) toggle.sync(agent)
+    toggleCtx.effect(() => toggleCtx.tools.guard(exec =>
+      exec.name === 'web_search' && exec.agent !== undefined && !toggle.enabled(exec.agent.id)
+        ? 'web_search is disabled for this conversation'
+        : undefined,
+    ), 'web-search-multi: disabled search guard')
+    toggleCtx.effect(() => toggleCtx.webServer.register({
+      kind: 'exact',
+      path: SEARCH_TOGGLE_PATH,
+      handler: searchToggleHandler({
+        read: sessionId => toggle.enabled(sessionId),
+        write: (sessionId, enabled) => toggle.set(
+          sessionId, enabled, toggleCtx.agents.get(SessionId(sessionId)),
+        ),
+      }),
+    }), 'web-search-multi: conversation search toggle route')
   })
 }
 
