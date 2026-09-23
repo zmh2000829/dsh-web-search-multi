@@ -48,7 +48,7 @@ dsh plugin --profile web add dsh-web-search-multi@0.2.0
 
 该包是 DSH 组合包。安装会加入 `cordis.patch.yml`，选择稳定的 provider id `configurable-search`，并默认使用无需密钥的英文 Wikipedia，因此首次测试不依赖额外服务。需要通用网页检索时，可在 Web 设置中切换到 SearXNG、Brave、Tavily 或 Gemini。**插件不会自动安装或启动 SearXNG。**
 
-输入框下方的工具栏新增 **联网搜索 · 开/关**。每个对话独立，默认开启，重启 DSH 后仍保留选择。关闭后，当前 DSH 对话中的模型看不到 `web_search` 工具及其使用说明，直接调用也会被阻止；`web_fetch` 和 Grok Build 自带的搜索不受影响。切换时已经开始的搜索可能完成，新状态作用于后续工具调用和模型请求。设置页里的搜索提供方仍由所有对话共用。
+输入框下方的工具栏提供左右两段式药丸按钮：点“开”启用联网搜索，点“关”关闭。每个对话独立，默认开启，重启 DSH 后仍保留选择。关闭后，当前 DSH 对话中的模型看不到 `web_search` 工具及其使用说明，直接调用也会被阻止；`web_fetch` 和 Grok Build 自带的搜索不受影响。切换时已经开始的搜索可能完成，新状态作用于后续工具调用和模型请求。设置页里的搜索提供方仍由所有对话共用。
 
 ## 免费的本地 SearXNG
 

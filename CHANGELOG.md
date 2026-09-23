@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.3
+
+- Replace the single Web Search toggle with explicit Off and On pill buttons.
+
 ## 0.2.2
 
 - Add a default-on Web Search switch below the DSH composer, stored independently for each conversation.

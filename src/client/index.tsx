@@ -65,6 +65,13 @@ const footer: CSSProperties = { display: 'flex', flexWrap: 'wrap', justifyConten
 const button: CSSProperties = { appearance: 'none', padding: '5px 14px', border: '1px solid var(--dsw-alias-border-l2)', borderRadius: 8, background: 'none', color: 'var(--dsw-alias-label-secondary)', cursor: 'pointer', font: 'inherit', fontSize: 13, lineHeight: 1.5 }
 const primaryButton: CSSProperties = { ...button, background: 'var(--dsw-alias-label-primary)', color: 'var(--dsw-alias-bg-layer-3)', borderColor: 'transparent' }
 const disabledButton: CSSProperties = { opacity: 0.4, cursor: 'default' }
+const toggleTrack: CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 2, padding: 2, border: '1px solid var(--dsw-alias-border-l2)', borderRadius: 999, background: 'var(--dsw-alias-bg-layer-3)' }
+const toggleOption = (active: boolean): CSSProperties => ({
+  appearance: 'none', minWidth: 34, padding: '3px 9px', border: 0, borderRadius: 999,
+  background: active ? 'var(--dsw-alias-label-primary)' : 'transparent',
+  color: active ? 'var(--dsw-alias-bg-layer-3)' : 'var(--dsw-alias-label-secondary)',
+  cursor: 'pointer', font: 'inherit', fontSize: 12, fontWeight: active ? 600 : 400, lineHeight: 1.4,
+})
 const statusText: CSSProperties = { flex: 1, minWidth: 150, margin: 0, fontSize: 12, lineHeight: 1.5 }
 const notice: CSSProperties = { margin: '12px 0 0', padding: '10px 12px', borderRadius: 8, background: 'var(--dsw-alias-bg-module-platform)', color: 'var(--dsw-alias-label-secondary)', fontSize: 12, lineHeight: 1.6 }
 
@@ -107,15 +114,16 @@ export function ConversationSearchToggle({ sessionId, t }: PropsRuntime<'convers
     return () => { current = false }
   }, [sessionId, retry])
 
-  const change = async (): Promise<void> => {
+  const change = async (next: boolean): Promise<void> => {
     if (saving) return
     if (enabled === undefined) {
       if (error !== undefined) setRetry(value => value + 1)
       return
     }
+    if (enabled === next) return
     setSaving(true)
     try {
-      setEnabled(await writeSearchToggle(sessionId, !enabled))
+      setEnabled(await writeSearchToggle(sessionId, next))
       setError(undefined)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause))
@@ -124,14 +132,20 @@ export function ConversationSearchToggle({ sessionId, t }: PropsRuntime<'convers
     }
   }
 
+  if (enabled === undefined) {
+    return <button type="button" disabled={error === undefined} style={{ ...button, borderRadius: 999, opacity: error === undefined ? 0.55 : 1 }}
+      title={error ?? t('toggle.hint')} onClick={() => { void change(false) }}>
+      {t(error === undefined ? 'toggle.loading' : 'toggle.retry')}
+    </button>
+  }
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }} title={error ?? t('toggle.hint')}>
-      <button type="button" aria-pressed={enabled === true} disabled={(enabled === undefined && error === undefined) || saving}
-        style={{ ...button, padding: '4px 9px', opacity: enabled === undefined ? 0.55 : 1 }}
-        onClick={() => { void change() }}>
-        {enabled === undefined ? t(error === undefined ? 'toggle.loading' : 'toggle.retry') : enabled ? t('toggle.on') : t('toggle.off')}
-      </button>
-      {error && <span aria-label={error} style={{ color: '#c94848', fontSize: 12 }}>!</span>}
+    <span role="group" aria-label={t('toggle.label')} style={toggleTrack} title={t('toggle.hint')}>
+      <button type="button" aria-label={t('toggle.disabled')} aria-pressed={!enabled} disabled={saving}
+        style={{ ...toggleOption(!enabled), ...(saving ? disabledButton : {}) }}
+        onClick={() => { void change(false) }}>{t('toggle.off')}</button>
+      <button type="button" aria-label={t('toggle.enabled')} aria-pressed={enabled} disabled={saving}
+        style={{ ...toggleOption(enabled), ...(saving ? disabledButton : {}) }}
+        onClick={() => { void change(true) }}>{t('toggle.on')}</button>
     </span>
   )
 }

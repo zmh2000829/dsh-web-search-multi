@@ -48,7 +48,7 @@ For a Git source install, pnpm may initially block the package's `prepare` build
 
 The package is a DSH bundle. Installation adds its `cordis.patch.yml`, selects the stable provider id `configurable-search`, and starts with keyless English Wikipedia so the first test works without another service. Select SearXNG, Brave, Tavily, or Gemini in the Web UI when broader web coverage is needed. **The plugin does not install or start SearXNG.**
 
-The composer tool row has a **Web Search · On/Off** switch for each conversation. It starts on, and the choice survives DSH restarts. Off removes `web_search` from that conversation's available tools and prompt guidance and blocks direct calls; it does not disable `web_fetch` or Grok Build's own search. A search already running when you switch off may finish; the new choice applies to subsequent tool calls and model requests. Provider selection in Settings is still shared across conversations.
+The composer tool row has a two-part pill for each conversation: select **On** on the right to enable search or **Off** on the left to disable it. It starts on, and the choice survives DSH restarts. Off removes `web_search` from that conversation's available tools and prompt guidance and blocks direct calls; it does not disable `web_fetch` or Grok Build's own search. A search already running when you switch off may finish; the new choice applies to subsequent tool calls and model requests. Provider selection in Settings is still shared across conversations.
 
 ## Free local SearXNG
 
