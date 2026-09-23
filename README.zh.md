@@ -18,30 +18,30 @@
 
 ## 环境要求
 
-- `dsh` `0.1.1-rc.2`
+- 插件 `0.2.1` 需要 `dsh` `0.1.5-rc.2`。插件 `0.2.0` 面向 DSH `0.1.1-rc.2`，不兼容新版设置 API。
 - Node.js `^22.19` 或 `>=24`
 - 默认 Wikipedia 后端无需凭据；其他后端需要开启 JSON 输出的 SearXNG 实例或对应 API 凭据
 
 ## 安装
 
-推荐从 npm 安装：
+DSH `0.1.5-rc.2` 推荐从 npm 安装：
 
 ```sh
-dsh plugin --profile web add dsh-web-search-multi@0.2.0
+dsh plugin --profile web add dsh-web-search-multi@0.2.1
 ```
 
 开发时从本地 clone 安装：
 
 ```sh
-npm install
+npm ci
 npm run check
 dsh plugin --profile web add link:$PWD
 ```
 
-从 GitHub 安装：
+旧版 DSH `0.1.1-rc.2` 请安装先前版本：
 
 ```sh
-dsh plugin --profile web add github:zmh2000829/dsh-web-search-multi
+dsh plugin --profile web add dsh-web-search-multi@0.2.0
 ```
 
 通过 Git 源安装时，pnpm 第一次可能阻止包的 `prepare` 构建。按照 `dsh` 输出的 `allowBuilds` 提示完成授权，然后重新执行安装命令。

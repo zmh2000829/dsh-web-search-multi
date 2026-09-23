@@ -4,7 +4,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import { credentialRef } from '@deepseek-ai/dsh-credentials'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import { launchEnvironmentOf } from '@deepseek-ai/dsh-launch-environment'
-import { installSettingsSection, settingsNamespace } from '@deepseek-ai/dsh-settings'
+import type {} from '@deepseek-ai/dsh-settings'
 import z from '@deepseek-ai/schemastery'
 import type { WebSearchProvider } from '@deepseek-ai/dsh-web'
 import { BraveBackend } from './brave.ts'
@@ -36,7 +36,7 @@ export const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash-lite'
 /** Default SearXNG instance configured by the shipped bundle. */
 export const SEARXNG_BASE_URL_ENV = 'SEARXNG_BASE_URL'
 /** Settings namespace consumed by the browser card and Host provider. */
-export const WEB_SEARCH_MULTI_SETTINGS_NAMESPACE = settingsNamespace('web-search-multi')
+export const WEB_SEARCH_MULTI_SETTINGS_NAMESPACE = 'web-search-multi'
 
 /** Cordis plugin name used in loader diagnostics. */
 export const name = 'web-search-multi'
@@ -163,16 +163,18 @@ export function apply(ctx: Context, config: Config): void {
   }
   ctx.effect(() => ctx.web.registerSearchProvider(provider))
 
-  installSettingsSection(ctx, WEB_SEARCH_MULTI_SETTINGS_NAMESPACE, Config, config, {
-    setSource: (source) => {
-      current = source
-    },
-    validate: (candidate) => {
-      createBackend(candidate, environment, credentials)
-    },
-    onChange: () => {
-      backend = createBackend(current(), environment, credentials)
-    },
+  ctx.inject(['settings'], (settingsCtx) => {
+    settingsCtx.settings.installSection(ctx, WEB_SEARCH_MULTI_SETTINGS_NAMESPACE, Config, config, {
+      setSource: (source) => {
+        current = source
+      },
+      validate: (candidate) => {
+        createBackend(candidate, environment, credentials)
+      },
+      onChange: () => {
+        backend = createBackend(current(), environment, credentials)
+      },
+    })
   })
 
   ctx.inject(['webServer', 'settings'], (webCtx) => {

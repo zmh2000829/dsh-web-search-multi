@@ -18,30 +18,30 @@ Pricing and quotas can change. Check the provider's current terms before deploym
 
 ## Requirements
 
-- `dsh` `0.1.1-rc.2`
+- Plugin `0.2.1` requires `dsh` `0.1.5-rc.2`. Plugin `0.2.0` targets DSH `0.1.1-rc.2` and is not compatible with the newer settings API.
 - Node.js `^22.19` or `>=24`
 - No credential for the default Wikipedia backend; a JSON-enabled SearXNG instance or API credential for the other backends
 
 ## Install
 
-Recommended npm installation:
+Recommended npm installation for DSH `0.1.5-rc.2`:
 
 ```sh
-dsh plugin --profile web add dsh-web-search-multi@0.2.0
+dsh plugin --profile web add dsh-web-search-multi@0.2.1
 ```
 
 From a local clone for development:
 
 ```sh
-npm install
+npm ci
 npm run check
 dsh plugin --profile web add link:$PWD
 ```
 
-From GitHub:
+For DSH `0.1.1-rc.2`, install the previous release:
 
 ```sh
-dsh plugin --profile web add github:zmh2000829/dsh-web-search-multi
+dsh plugin --profile web add dsh-web-search-multi@0.2.0
 ```
 
 For a Git source install, pnpm may initially block the package's `prepare` build. Follow the `allowBuilds` instruction printed by `dsh`, then repeat the install command.

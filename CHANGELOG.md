@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1
+
+- Support DSH 0.1.5-rc.2 by using the current settings service and browser slot APIs.
+- Remove the retired client-runtime dependency and declare the browser renderer dependency.
+- Verify both keyless Wikipedia and saved-credential Gemini searches against DSH 0.1.5-rc.2.
+
 ## 0.2.0
 
 - Add one selectable DSH-native search provider for SearXNG, Wikipedia, Tavily, Brave, and Gemini.
