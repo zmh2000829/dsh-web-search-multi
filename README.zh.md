@@ -2,7 +2,7 @@
 
 [English](README.md) | 中文
 
-这是一个可配置的 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) Web Search 插件。面向模型的 `web_search` 工具保持不变，插件根据配置选择一个外部搜索后端。
+在 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 中配置网页搜索：通过 Web 设置选择 SearXNG、Brave、Tavily、Gemini 或 Wikipedia，并在每个对话的输入框下方独立开关搜索。插件使用 DSH 原生 `web_search` 工具；默认 Wikipedia 无需 API key，适合先体验百科查询。
 
 ## 提供方
 
@@ -18,7 +18,7 @@
 
 ## 环境要求
 
-- 插件 `0.2.2` 需要 `dsh` `0.1.5-rc.2`。插件 `0.2.0` 面向 DSH `0.1.1-rc.2`，不兼容新版设置 API。
+- 当前插件 `0.2.3` 需要 `dsh` `0.1.5-rc.2`。插件 `0.2.0` 面向 DSH `0.1.1-rc.2`，不兼容新版设置 API。
 - Node.js `^22.19` 或 `>=24`
 - 默认 Wikipedia 后端无需凭据；其他后端需要开启 JSON 输出的 SearXNG 实例或对应 API 凭据
 
@@ -27,8 +27,10 @@
 DSH `0.1.5-rc.2` 推荐从 npm 安装：
 
 ```sh
-dsh plugin --profile web add dsh-web-search-multi@0.2.2
+dsh plugin --profile web add dsh-web-search-multi@latest
 ```
+
+安装后重启 `dsh web`。先使用默认 Wikipedia 查询百科知识；需要新闻、天气等通用网页信息时，在设置中的“多源网页搜索”卡片选择提供方、配置凭据或 SearXNG 地址，并点击“测试配置”。每个对话的搜索开关默认开启。
 
 开发时从本地 clone 安装：
 

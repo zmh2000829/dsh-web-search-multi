@@ -2,7 +2,7 @@
 
 English | [中文](README.zh.md)
 
-A configurable [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) web-search plugin. It keeps the model-facing `web_search` tool stable while selecting one external backend at configuration time.
+Configure web search in [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness): choose SearXNG, Brave, Tavily, Gemini, or Wikipedia in Web settings and enable or disable search independently below each conversation's composer. The plugin uses DSH's native `web_search` tool. The default Wikipedia backend needs no API key and provides an easy first encyclopedia query.
 
 ## Providers
 
@@ -18,7 +18,7 @@ Pricing and quotas can change. Check the provider's current terms before deploym
 
 ## Requirements
 
-- Plugin `0.2.2` requires `dsh` `0.1.5-rc.2`. Plugin `0.2.0` targets DSH `0.1.1-rc.2` and is not compatible with the newer settings API.
+- The current plugin `0.2.3` requires `dsh` `0.1.5-rc.2`. Plugin `0.2.0` targets DSH `0.1.1-rc.2` and is not compatible with the newer settings API.
 - Node.js `^22.19` or `>=24`
 - No credential for the default Wikipedia backend; a JSON-enabled SearXNG instance or API credential for the other backends
 
@@ -27,8 +27,10 @@ Pricing and quotas can change. Check the provider's current terms before deploym
 Recommended npm installation for DSH `0.1.5-rc.2`:
 
 ```sh
-dsh plugin --profile web add dsh-web-search-multi@0.2.2
+dsh plugin --profile web add dsh-web-search-multi@latest
 ```
+
+Restart `dsh web` after installation. Start with an encyclopedia query using the default Wikipedia backend. For general web information such as news or weather, open the “Multi-provider web search” settings card, choose a provider, configure its credentials or SearXNG URL, and select “Test configuration.” Search starts enabled in each conversation.
 
 From a local clone for development:
 
